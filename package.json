@@ -1,0 +1,66 @@
+{
+  "name": "basecalc-hvac",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "expo": {
+    "autolinking": {
+      "exclude": [
+        "react-native-purchases"
+      ]
+    }
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "eas:build:ios": "eas build --platform ios",
+    "eas:build:android": "eas build --platform android",
+    "eas:build": "eas build --platform all",
+    "eas:submit:ios": "eas submit --platform ios",
+    "eas:submit:android": "eas submit --platform android"
+  },
+  "dependencies": {
+    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
+    "@expo-google-fonts/saira": "^0.4.2",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.18.0",
+    "@react-navigation/native": "^7.3.1",
+    "@react-navigation/native-stack": "^7.17.3",
+    "expo": "~56.0.12",
+    "expo-application": "~56.0.3",
+    "expo-constants": "^56.0.18",
+    "expo-file-system": "^56.0.8",
+    "expo-font": "~56.0.7",
+    "expo-print": "^56.0.4",
+    "expo-sharing": "~56.0.18",
+    "expo-splash-screen": "~56.0.10",
+    "expo-sqlite": "^56.0.5",
+    "expo-status-bar": "~56.0.4",
+    "nativewind": "^4.2.5",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-gesture-handler": "~2.31.1",
+    "react-native-purchases": "^10.3.0",
+    "react-native-reanimated": "4.3.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "^4.25.2",
+    "react-native-url-polyfill": "^3.0.0",
+    "react-native-worklets": "0.8.3",
+    "tailwindcss": "^3.4.19",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.14",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "^56.0.15",
+    "jest-expo": "^56.0.5",
+    "sharp": "^0.35.1",
+    "typescript": "~6.0.3"
+  },
+  "private": true
+}

@@ -1,0 +1,171 @@
+{
+  "state": {
+    "clients": [
+      {
+        "id": "client_seed_001",
+        "name": "Marcus Rivera",
+        "email": "marcus@riverapg.com",
+        "phone": "(512) 555-0142",
+        "address": "1820 Oak Ridge Dr, Austin, TX 78704",
+        "company": "Rivera Property Group",
+        "notes": "Repeat job contact — 6 properties.",
+        "createdAt": "2026-05-18T15:12:00.000Z",
+        "updatedAt": "2026-06-12T17:40:00.000Z",
+        "synced": true
+      },
+      {
+        "id": "client_seed_002",
+        "name": "Sarah Chen",
+        "email": "schen@northside.com",
+        "phone": "(512) 555-0188",
+        "address": "455 Lamar Blvd, Austin, TX 78703",
+        "company": "Northside Apartments",
+        "notes": "Lighting retrofit across 12 units.",
+        "createdAt": "2026-05-29T18:05:00.000Z",
+        "updatedAt": "2026-06-10T16:20:00.000Z",
+        "synced": true
+      },
+      {
+        "id": "client_seed_003",
+        "name": "James Patterson",
+        "email": "james@pattersonbuild.com",
+        "phone": "(512) 555-0119",
+        "address": "92 Industrial Pkwy, Austin, TX 78745",
+        "company": "Patterson Builders",
+        "notes": "New construction — rough-in scheduled.",
+        "createdAt": "2026-06-14T14:30:00.000Z",
+        "updatedAt": "2026-06-18T13:10:00.000Z",
+        "synced": true
+      }
+    ],
+    "invoices": [
+      {
+        "id": "inv_seed_001",
+        "clientId": "client_seed_001",
+        "invoiceNumber": "JOB-202605-0001",
+        "date": "2026-05-20",
+        "dueDate": "2026-06-19",
+        "lineItems": [
+          {
+            "id": "li_1a",
+            "description": "200A service panel upgrade",
+            "quantity": 1,
+            "unitPrice": 1450,
+            "total": 1450
+          },
+          {
+            "id": "li_1b",
+            "description": "Permit & inspection",
+            "quantity": 1,
+            "unitPrice": 225,
+            "total": 225
+          }
+        ],
+        "subtotal": 1675,
+        "taxRate": 0,
+        "taxAmount": 0,
+        "total": 1675,
+        "paymentTerms": "Create the final invoice in SpeakSheet.",
+        "notes": "Thank you for your business.",
+        "status": "paid",
+        "createdAt": "2026-05-20T16:00:00.000Z",
+        "updatedAt": "2026-06-01T15:00:00.000Z",
+        "synced": true
+      },
+      {
+        "id": "inv_seed_002",
+        "clientId": "client_seed_002",
+        "invoiceNumber": "JOB-202606-0002",
+        "date": "2026-06-10",
+        "dueDate": "2026-07-10",
+        "lineItems": [
+          {
+            "id": "li_2a",
+            "description": "LED lighting retrofit (per unit)",
+            "quantity": 12,
+            "unitPrice": 240,
+            "total": 2880
+          },
+          {
+            "id": "li_2b",
+            "description": "Fixtures & materials",
+            "quantity": 1,
+            "unitPrice": 360,
+            "total": 360
+          }
+        ],
+        "subtotal": 3240,
+        "taxRate": 0,
+        "taxAmount": 0,
+        "total": 3240,
+        "paymentTerms": "Create the final invoice in SpeakSheet.",
+        "notes": "",
+        "status": "sent",
+        "createdAt": "2026-06-10T17:30:00.000Z",
+        "updatedAt": "2026-06-10T17:30:00.000Z",
+        "synced": true
+      },
+      {
+        "id": "inv_seed_003",
+        "clientId": "client_seed_003",
+        "invoiceNumber": "JOB-202606-0003",
+        "date": "2026-06-18",
+        "dueDate": "2026-07-18",
+        "lineItems": [
+          {
+            "id": "li_3a",
+            "description": "Rough-in wiring labor",
+            "quantity": 40,
+            "unitPrice": 95,
+            "total": 3800
+          },
+          {
+            "id": "li_3b",
+            "description": "Romex 12/2 (1000 ft)",
+            "quantity": 3,
+            "unitPrice": 165,
+            "total": 495
+          },
+          {
+            "id": "li_3c",
+            "description": "Breaker panel & breakers",
+            "quantity": 1,
+            "unitPrice": 685,
+            "total": 685
+          }
+        ],
+        "subtotal": 4980,
+        "taxRate": 0,
+        "taxAmount": 0,
+        "total": 4980,
+        "paymentTerms": "Create the final invoice in SpeakSheet.",
+        "notes": "Draft - pending field review.",
+        "status": "draft",
+        "createdAt": "2026-06-18T14:00:00.000Z",
+        "updatedAt": "2026-06-18T14:00:00.000Z",
+        "synced": true
+      }
+    ],
+    "calculations": [],
+    "themeMode": "dark",
+    "company": {
+      "name": "Voltline Electric",
+      "address": "1820 Oak Ridge Dr",
+      "city": "Austin",
+      "state": "TX",
+      "zip": "78704",
+      "phone": "(512) 555-0100",
+      "email": "office@voltline.com",
+      "taxRate": 0,
+      "paymentTerms": "Create the final invoice in SpeakSheet."
+    },
+    "lastSync": null,
+    "syncOwnerId": null,
+    "pendingDeletes": {
+      "clients": [],
+      "invoices": [],
+      "calculations": []
+    }
+  },
+  "version": 0
+}

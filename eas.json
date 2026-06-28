@@ -1,0 +1,50 @@
+{
+  "cli": {
+    "version": ">= 20.1.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": { "simulator": false },
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": { "buildConfiguration": "Release", "credentialsSource": "remote" },
+      "android": { "buildType": "apk" }
+    },
+    "simulator": {
+      "distribution": "internal",
+      "ios": { "simulator": true, "buildConfiguration": "Release" }
+    },
+    "production": {
+      "environment": "production",
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "credentialsSource": "remote"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "summerlyn@basemapped.com",
+        "ascAppId": "6782200021",
+        "language": "en-US",
+        "sku": "basecalc-hvac-ios-001"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./deploy/google-play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "completed"
+      }
+    }
+  }
+}

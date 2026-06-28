@@ -1,0 +1,33 @@
+# Build and tool artifacts
+.expo/
+dist/
+web-build/
+work/
+
+# Local environment and credentials
+.env
+.env*.local
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+credentials.json
+
+# Generated native folders
+ios/
+android/
+
+# Local-only support assets
+screenshots/
+design/
+store-assets/
+artifacts/
+supabase/.temp/
+
+# Temporary scripts and logs
+scripts/generate-brand-assets 2.mjs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
