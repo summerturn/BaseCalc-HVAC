@@ -8,13 +8,13 @@ Everything needed to fill out the App Store Connect listing for BaseCalc HVAC.
 store-assets/
 ├── screenshots/        ← 10 images, 1284 × 2778  (iPhone 6.5"/6.7")
 │   ├── 01-dashboard.png
-│   ├── 02-duct-sizing.png   (PASS/FAIL hero)
-│   ├── 03-cfm-from-btu.png
-│   ├── 04-btu-tons.png
+│   ├── 02-duct-sizing.png
+│   ├── 03-filter-velocity.png   (PASS/FAIL hero)
+│   ├── 04-psychrometrics.png
 │   ├── 05-jobs.png
 │   ├── 06-worksheet.png
 │   ├── 07-materials.png
-│   ├── 08-room-load.png
+│   ├── 08-superheat.png
 │   ├── 09-refrigerant-lines.png
 │   └── 10-history.png
 ├── screenshots-ipad/   ← same 10 screens, 2048 × 2732  (iPad 13")

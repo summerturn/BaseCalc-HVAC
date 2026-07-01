@@ -1,6 +1,6 @@
 // Generates BaseCalc HVAC marketing imagery:
-//   • A continuous PANORAMA carousel — N iPhone frames (1284×2778) whose amber
-//     waveform + glow flow seamlessly across frame edges, so they read as one
+//   • A continuous PANORAMA carousel — N iPhone frames (1284×2778) whose teal
+//     airflow + glow flow seamlessly across frame edges, so they read as one
 //     image when placed side-by-side in the App Store carousel.
 //   • A landscape HERO (2400×1500) with three fanned devices + the wordmark.
 //
@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   ROOT, CHROME, T, rgba, FONTCSS, BODY, DISP, ICON,
-  statusBar, tabBar, dashboard, ohms, voltageDrop, wireSize, history,
+  statusBar, tabBar, dashboard, ductSizing, filterVelocity, psychrometrics, history,
 } from './generate-store-screenshots.mjs';
 
 const TMP = join(tmpdir(), 'basecalc-marketing');
@@ -73,23 +73,23 @@ function backdrop({ totalW, H, viewX, viewW, midY, amp, glowsAt, glowY }) {
   return `<svg width="${viewW}" height="${H}" viewBox="${viewX} 0 ${viewW} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0">
     <defs>
       <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151B29"/><stop offset="0.5" stop-color="#0C1019"/><stop offset="1" stop-color="#06080E"/></linearGradient>
-      <linearGradient id="pa" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${totalW}" y2="0"><stop offset="0" stop-color="#FFE7A6"/><stop offset="0.5" stop-color="#FFB020"/><stop offset="1" stop-color="#E98500"/></linearGradient>
-      <radialGradient id="pg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFB020" stop-opacity="0.30"/><stop offset="0.5" stop-color="#F59E0B" stop-opacity="0.07"/><stop offset="1" stop-color="#F59E0B" stop-opacity="0"/></radialGradient>
+      <linearGradient id="pa" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${totalW}" y2="0"><stop offset="0" stop-color="#CCFBF1"/><stop offset="0.5" stop-color="#2DD4BF"/><stop offset="1" stop-color="#0D9488"/></linearGradient>
+      <radialGradient id="pg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2DD4BF" stop-opacity="0.30"/><stop offset="0.5" stop-color="#14B8A6" stop-opacity="0.07"/><stop offset="1" stop-color="#14B8A6" stop-opacity="0"/></radialGradient>
     </defs>
     <rect x="0" y="0" width="${totalW}" height="${H}" fill="url(#pbg)"/>
     ${grid}
     ${glows}
-    <path d="${ghost}" fill="none" stroke="rgba(255,176,32,0.16)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${ghost}" fill="none" stroke="rgba(45,212,191,0.16)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="${main}" fill="none" stroke="url(#pa)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`;
 }
 
 // ── Panorama frames ─────────────────────────────────────────────────────
 const PANELS = [
-  { body: dashboard, active: 'calc', l1: 'Run the math.', l2: 'In the field.', sub: 'NEC-aware electrical calculators, built for the trade.' },
-  { body: voltageDrop, active: 'calc', l1: 'Pass or fail,', l2: 'instantly.', sub: 'Voltage drop with a clear 3% code check.' },
-  { body: wireSize, active: 'calc', l1: 'Sized to', l2: 'code.', sub: 'Minimum conductor from NEC 310.16 ampacity.' },
-  { body: ohms, active: 'calc', l1: 'Any two values.', l2: 'Solved.', sub: "Ohm's Law — volts, amps, ohms, watts." },
+  { body: dashboard, active: 'calc', l1: 'Run the math.', l2: 'In the field.', sub: 'HVAC calculators built for the trade.' },
+  { body: ductSizing, active: 'calc', l1: 'Size ducts', l2: 'to spec.', sub: 'Round and rectangular from CFM and velocity.' },
+  { body: filterVelocity, active: 'calc', l1: 'Pass or fail,', l2: 'instantly.', sub: 'Filter face velocity with a clear target check.' },
+  { body: psychrometrics, active: 'calc', l1: 'Total, sensible,', l2: 'latent.', sub: 'Psychrometric loads in one readout.' },
   { body: history, active: 'his', l1: 'Keep the', l2: 'job record.', sub: 'Local calculation history, always offline.' },
 ];
 
@@ -129,14 +129,14 @@ async function hero() {
   const W = 2400, H = 1500;
   const bg = backdrop({ totalW: W, H, viewX: 0, viewW: W, midY: 980, amp: 150, glowsAt: [W * 0.5], glowY: H * 0.28 });
   const center = phone({ body: dashboard(), active: 'calc', left: W / 2 - 300, top: 372, w: 600, z: 5 });
-  const leftP = phone({ body: voltageDrop(), active: 'calc', left: 360, top: 470, w: 486, rot: -9, z: 3 });
-  const rightP = phone({ body: wireSize(), active: 'calc', left: 1554, top: 470, w: 486, rot: 9, z: 3 });
+  const leftP = phone({ body: filterVelocity(), active: 'calc', left: 360, top: 470, w: 486, rot: -9, z: 3 });
+  const rightP = phone({ body: ductSizing(), active: 'calc', left: 1554, top: 470, w: 486, rot: 9, z: 3 });
   const header = `<div style="position:absolute;top:96px;left:0;width:${W}px;text-align:center;z-index:8">
     <div style="display:inline-flex;align-items:center;gap:26px">
       <img src="file://${ICON}" style="width:118px;height:118px;border-radius:30px;box-shadow:0 18px 40px rgba(0,0,0,0.5)"/>
-      <div style="font-family:${DISP};font-weight:900;font-size:104px;line-height:104px;letter-spacing:-1px"><span style="color:${T.text}">BASE</span><span style="color:${T.amberB}">CALC</span> <span style="color:${T.muted};font-size:60px;letter-spacing:6px">ELECTRIC</span></div>
+      <div style="font-family:${DISP};font-weight:900;font-size:104px;line-height:104px;letter-spacing:-1px"><span style="color:${T.text}">BASE</span><span style="color:${T.amberB}">CALC</span> <span style="color:${T.muted};font-size:60px;letter-spacing:6px">HVAC</span></div>
     </div>
-    <div style="font-family:${BODY};font-weight:500;font-size:42px;color:${T.dim};margin-top:24px">NEC 2023 calculators that pass or fail on the spot — built for electricians.</div>
+    <div style="font-family:${BODY};font-weight:500;font-size:42px;color:${T.dim};margin-top:24px">Load, airflow, duct, and refrigerant math that pass or fail on the spot — built for HVAC techs.</div>
   </div>`;
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>${FONTCSS}
 *{margin:0;padding:0;box-sizing:border-box}html,body{width:${W}px;height:${H}px;overflow:hidden}

@@ -28,7 +28,7 @@ export type AppColors = {
   textMuted: string;
   textFaint: string;
 
-  // Brand (live-wire amber)
+  // Brand (HVAC airflow teal) — token names kept as `amber*` for cross-app parity
   amber: string;
   amberBright: string;
   amberSoft: string;
@@ -75,10 +75,10 @@ const dark: AppColors = {
   textDim: '#C5CDD8',
   textMuted: '#A8B0BC',
   textFaint: '#7A8491',
-  amber: '#F59E0B',
-  amberBright: '#FFB020',
-  amberSoft: 'rgba(245,158,11,0.14)',
-  onAmber: '#0A0C11',
+  amber: '#14B8A6',
+  amberBright: '#2DD4BF',
+  amberSoft: 'rgba(45,212,191,0.14)',
+  onAmber: '#04201C',
   pass: '#34D399',
   passBg: 'rgba(52,211,153,0.12)',
   passBorder: 'rgba(52,211,153,0.32)',
@@ -105,10 +105,10 @@ const light: AppColors = {
   textDim: '#3D4550',
   textMuted: '#646C79',
   textFaint: '#9AA2AE',
-  amber: '#B45309',
-  amberBright: '#F59E0B',
-  amberSoft: 'rgba(245,158,11,0.16)',
-  onAmber: '#0A0C11',
+  amber: '#0F766E',
+  amberBright: '#14B8A6',
+  amberSoft: 'rgba(20,184,166,0.16)',
+  onAmber: '#04201C',
   pass: '#0E9F6E',
   passBg: 'rgba(16,185,129,0.12)',
   passBorder: 'rgba(16,185,129,0.30)',

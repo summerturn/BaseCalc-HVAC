@@ -4,7 +4,7 @@
 // screen — built from the real theme tokens (src/theme/appTheme.ts), the real
 // fonts (Saira / JetBrains Mono / MaterialIcons), the real component layouts,
 // and seeded sample data — placed in an iPhone frame on the brand "Field
-// Instrument" gradient (amber glow + blueprint grid) with a headline.
+// Instrument" gradient (teal glow + blueprint grid) with a headline.
 //
 // Pipeline: HTML -> headless Chrome screenshot @2x -> sharp downscale.
 // Run: node scripts/generate-store-screenshots.mjs
@@ -52,12 +52,13 @@ const T = {
   bg: '#090B11', bgEl: '#10141F', panel: '#181E2B', panelEl: '#202838', inset: '#0D1119',
   border: 'rgba(255,255,255,0.13)', borderStrong: 'rgba(255,255,255,0.22)', divider: 'rgba(255,255,255,0.10)',
   text: '#F3F5F9', dim: '#C5CDD8', muted: '#A8B0BC', faint: '#7A8491',
-  amber: '#F59E0B', amberB: '#FFB020', amberSoft: 'rgba(245,158,11,0.14)', onAmber: '#0A0C11',
+  amber: '#14B8A6', amberB: '#2DD4BF', amberSoft: 'rgba(45,212,191,0.14)', onAmber: '#04201C',
   pass: '#34D399', passBg: 'rgba(52,211,153,0.12)', passBorder: 'rgba(52,211,153,0.32)',
   fail: '#FB7185', failBg: 'rgba(251,113,133,0.12)', failBorder: 'rgba(251,113,133,0.34)',
   info: '#38BDF8', placeholder: '#8A94A3',
 };
-const CAT = { ohms: '#FFB020', voltage: '#38BDF8', wire: '#34D399', conduit: '#A78BFA', box: '#FB7185', bend: '#2DD4BF', transformer: '#818CF8', power: '#FB923C' };
+// HVAC calculator category accents (from src/theme/appTheme.ts CATEGORY).
+const CAT = { airflow: '#38BDF8', load: '#FB923C', duct: '#A78BFA', refrigerant: '#22C55E', psychrometrics: '#2DD4BF', hydronics: '#60A5FA', efficiency: '#84CC16', general: '#FBBF24' };
 const rgba = (hex, a) => { const n = parseInt(hex.replace('#', ''), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 
 // ── Fonts ───────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ function statusBar() {
   </div>`;
 }
 const TABS = [
-  { ic: 'bolt', label: 'Calculators', key: 'calc' },
+  { ic: 'ac_unit', label: 'Calculators', key: 'calc' },
   { ic: 'work_outline', label: 'Jobs', key: 'jobs' },
   { ic: 'inventory_2', label: 'Materials', key: 'mat' },
   { ic: 'history', label: 'History', key: 'his' },
@@ -125,7 +126,7 @@ function field(lbl, value, suffix, placeholder) {
   </div>`;
 }
 const solveBtn = (lbl = 'Solve') => `<div style="display:flex;align-items:center;justify-content:center;gap:8px;background:${T.amberB};border:1px solid ${T.amber};border-radius:15px;padding:15px;margin-top:4px;box-shadow:0 6px 16px ${rgba(T.amberB, .5)}">
-  ${mi('bolt', 20, T.onAmber)}<span style="font-family:${BODY};font-weight:600;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:${T.onAmber}">${lbl}</span></div>`;
+  ${mi('ac_unit', 20, T.onAmber)}<span style="font-family:${BODY};font-weight:600;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:${T.onAmber}">${lbl}</span></div>`;
 
 const backBar = () => `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
   <div style="width:42px;height:42px;border-radius:13px;background:${T.panel};border:1px solid ${T.border};display:flex;align-items:center;justify-content:center">${mi('chevron_left', 26, T.amber)}</div>
@@ -171,14 +172,14 @@ function metricReadout({ tint, primary, secondary = [], details = [] }) {
 
 // ── Screen bodies ───────────────────────────────────────────────────────
 const CALCS = [
-  { t: "Ohm's Law", s: 'Solve V · I · R · P', ic: 'bolt', code: 'V = I × R', col: CAT.ohms },
-  { t: 'Voltage Drop', s: '% drop over a run', ic: 'trending_down', code: 'NEC 210.19', col: CAT.voltage },
-  { t: 'Wire Size', s: 'Ampacity 310.16', ic: 'cable', code: 'NEC 310.16', col: CAT.wire },
-  { t: 'Conduit Fill', s: 'Fill % limit', ic: 'radio_button_unchecked', code: 'CH. 9', col: CAT.conduit },
-  { t: 'Box Fill', s: 'Volume 314.16', ic: 'inbox', code: 'NEC 314.16', col: CAT.box },
-  { t: 'Conduit Bend', s: 'Offset bend marks', ic: 'architecture', code: 'OFFSET', col: CAT.bend },
-  { t: 'Transformer', s: 'kVA ↔ full-load A', ic: 'transform', code: 'kVA / FLA', col: CAT.transformer },
-  { t: 'Power', s: 'kW · kVA · PF', ic: 'power', code: '√3 · V · I', col: CAT.power },
+  { t: 'BTU ↔ Tons', s: 'Capacity conversion', ic: 'whatshot', code: '12,000 BTU/ton', col: CAT.load },
+  { t: 'CFM from BTU', s: 'Airflow from load', ic: 'air', code: 'Q = BTU ÷ (1.08 × ΔT)', col: CAT.airflow },
+  { t: 'Duct Sizing', s: 'Round & rectangular', ic: 'line_weight', code: 'Area = CFM ÷ V', col: CAT.duct },
+  { t: 'Psychrometrics', s: 'Total / sensible / latent', ic: 'water_drop', code: '4.5 × CFM × Δh', col: CAT.psychrometrics },
+  { t: 'Refrigerant Lines', s: 'Suction & liquid sizes', ic: 'linear_scale', code: 'Line sizing', col: CAT.refrigerant },
+  { t: 'Superheat / Subcool', s: 'Charging targets', ic: 'device_thermostat', code: 'SH / SC target', col: CAT.refrigerant },
+  { t: 'Hydronics', s: 'BTU · GPM · ΔT', ic: 'water', code: 'Q = 500 × GPM × ΔT', col: CAT.hydronics },
+  { t: 'Air Changes', s: 'ACH from CFM', ic: 'cached', code: 'ACH = CFM × 60 ÷ V', col: CAT.airflow },
 ];
 function dashboard() {
   const card = (c) => `<div style="flex:1;background:${T.panel};border:1px solid ${T.border};border-radius:20px;overflow:hidden;box-shadow:0 10px 18px rgba(0,0,0,0.4);display:flex;flex-direction:column;justify-content:space-between;height:176px">
@@ -196,42 +197,41 @@ function dashboard() {
   return `<div style="padding:8px 22px 0">
     <div style="margin-top:6px;margin-bottom:26px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="background:${T.amberSoft};border:1px solid ${rgba(T.amberB, .4)};border-radius:999px;padding:5px 11px">${label('NEC 2023 · Field Ready', T.amber, 0)}</div>
+        <div style="background:${T.amberSoft};border:1px solid ${rgba(T.amberB, .4)};border-radius:999px;padding:5px 11px">${label('HVAC · Field Ready', T.amber, 0)}</div>
         <div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:7px;background:${T.pass};box-shadow:0 0 5px ${T.pass}"></div><span style="font-family:${MONO};font-weight:500;font-size:11px;color:${T.muted}">LIVE</span></div>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
         <img src="file://${ICON}" style="width:74px;height:74px;border-radius:20px"/>
         <div>
           <div style="font-family:${DISP};font-weight:900;font-size:35px;line-height:44px;letter-spacing:.2px"><span style="color:${T.text}">BASE</span><span style="color:${T.amberB}">CALC</span></div>
-          <div style="font-family:${BODY};font-weight:700;font-size:14px;line-height:20px;letter-spacing:1.8px;text-transform:uppercase;color:${T.muted};margin-top:2px">Electric</div>
+          <div style="font-family:${BODY};font-weight:700;font-size:14px;line-height:20px;letter-spacing:1.8px;text-transform:uppercase;color:${T.muted};margin-top:2px">HVAC</div>
         </div>
       </div>
-      <div style="font-family:${BODY};font-weight:500;font-size:16px;line-height:24px;color:${T.muted};margin-top:10px">Code-compliant electrical math for the job site and the job worksheet.</div>
+      <div style="font-family:${BODY};font-weight:500;font-size:16px;line-height:24px;color:${T.muted};margin-top:10px">HVAC field math for loads, airflow, duct, refrigerant, and hydronics.</div>
     </div>
     ${rows}
   </div>`;
 }
-function ohms() {
-  return `<div style="padding:6px 20px 0">${calcHeader("Ohm's Law", 'V = I × R   ·   P = V × I')}
-    ${panel(`<div style="font-family:${BODY};font-weight:500;font-size:16px;line-height:24px;color:${T.muted};margin-bottom:16px">Enter any two values — BaseCalc solves the rest.</div>
-      ${field('Voltage', '120', 'V')}${field('Current', '10', 'A')}${field('Resistance', '', 'Ω', '—')}${field('Power', '', 'W', '—')}${solveBtn('Solve')}`)}
-    ${metricReadout({ tint: CAT.ohms, primary: [{ label: 'Resistance', value: '12.00', unit: 'Ω' }, { label: 'Power', value: '1200', unit: 'W' }] })}
+function ductSizing() {
+  return `<div style="padding:6px 20px 0">${calcHeader('Duct Sizing', 'Area = CFM ÷ V')}
+    ${panel(`${field('Airflow', '1,000', 'CFM')}${field('Target velocity', '900', 'FPM')}
+      ${label('Shape', T.muted, 8)}<div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="padding:9px 14px;border-radius:11px;border:1px solid ${T.amberB};background:${T.amberSoft};font-family:${MONO};font-weight:500;font-size:13.5px;color:${T.amberB}">Round</div>
+        <div style="padding:9px 14px;border-radius:11px;border:1px solid ${T.border};background:${T.inset};font-family:${BODY};font-weight:500;font-size:13.5px;color:${T.dim}">Rectangular</div></div>
+      ${solveBtn('Size duct')}`)}
+    ${metricReadout({ tint: CAT.duct, primary: [{ label: 'Round Ø', value: '14', unit: 'in' }, { label: 'Area', value: '1.11', unit: 'ft²' }], secondary: [{ label: 'Rectangular equivalent', value: '16 × 10 in' }, { label: 'Velocity', value: '900 FPM' }] })}
   </div>`;
 }
-function voltageDrop() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Voltage Drop', 'NEC 210.19 · 3% target')}
-    ${panel(`${field('System voltage', '120', 'V')}${field('Load current', '20', 'A')}${field('One-way length', '80', 'ft')}${field('Wire size (AWG/kcmil)', '8 AWG')}${solveBtn('Calculate')}`)}
-    ${resultReadout({ value: '2.04', unit: '%', limit: 3, pass: true, message: '2.04% drop — within the 3% target for branch circuits.', details: ['Conductor: 8 AWG copper · 20 A @ 120 V', 'Voltage at load: 117.6 V'] })}
+function filterVelocity() {
+  return `<div style="padding:6px 20px 0">${calcHeader('Filter Velocity', 'Face velocity · 500 FPM guidance')}
+    ${panel(`${field('Airflow', '1,000', 'CFM')}${field('Filter width', '24', 'in')}${field('Filter height', '24', 'in')}${solveBtn('Check')}`)}
+    ${resultReadout({ value: '250', unit: 'FPM', limit: 500, pass: true, message: 'Face velocity 250 FPM — within 500 FPM guidance.', details: ['Filter area = 24" × 24" ÷ 144 = 4.00 ft²', 'Velocity = 1,000 ÷ 4.00 = 250 FPM'] })}
   </div>`;
 }
-function wireSize() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Wire Size', 'NEC 310.16 · 75°C')}
-    ${panel(`${field('Load current', '52', 'A')}${field('Ambient temperature', '30', '°C')}${field('Current-carrying conductors', '3')}
-      ${label('Conductor', T.muted, 8)}<div style="display:flex;gap:8px;margin-bottom:14px">
-        <div style="padding:9px 14px;border-radius:11px;border:1px solid ${T.amberB};background:${T.amberSoft};font-family:${MONO};font-weight:500;font-size:13.5px;color:${T.amberB}">Copper</div>
-        <div style="padding:9px 14px;border-radius:11px;border:1px solid ${T.border};background:${T.inset};font-family:${BODY};font-weight:500;font-size:13.5px;color:${T.dim}">Aluminum</div></div>
-      ${solveBtn('Calculate')}`)}
-    ${resultReadout({ value: '6', unit: 'AWG', pass: true, message: '6 AWG copper carries 65 A at 75°C — sized for a 52 A load.', details: ['Copper · 75°C column (NEC 310.16)', 'Ampacity at size: 65 A'] })}
+function psychrometrics() {
+  return `<div style="padding:6px 20px 0">${calcHeader('Psychrometrics', '4.5 × CFM × Δh')}
+    ${panel(`${field('Airflow', '1,000', 'CFM')}${field('Entering enthalpy', '30.0', 'BTU/lb')}${field('Leaving enthalpy', '22.0', 'BTU/lb')}${field('Sensible ΔT', '20', '°F')}${solveBtn('Calculate')}`)}
+    ${metricReadout({ tint: CAT.psychrometrics, primary: [{ label: 'Total', value: '36,000', unit: 'BTU/hr' }, { label: 'Sensible', value: '21,600', unit: 'BTU/hr' }], secondary: [{ label: 'Latent', value: '14,400 BTU/hr' }, { label: 'Sensible heat ratio', value: '0.60' }] })}
   </div>`;
 }
 function jobs() {
@@ -263,9 +263,9 @@ function jobs() {
 }
 function materials() {
   const groups = [
-    { t: 'Wire + Raceway', s: 'Check after voltage drop and conduit fill.', ic: 'cable', col: T.amberB, items: ['Conductors by color and gauge', 'Raceway and fittings', 'Pull string or mule tape'] },
-    { t: 'Boxes + Devices', s: 'Use box fill before rough-in.', ic: 'all_inbox', col: T.info, items: ['Junction and device boxes', 'Raised covers and mud rings', 'Receptacles and plates'] },
-    { t: 'Panel + Protection', s: 'Match breaker, conductor, and load notes.', ic: 'electrical_services', col: T.pass, items: ['Breaker or fuse size', 'Panel labels', 'Lugs and terminals'] },
+    { t: 'Refrigerant + Lineset', s: 'Match to tonnage after line sizing.', ic: 'linear_scale', col: CAT.refrigerant, items: ['Line set by tonnage and length', 'Brazing rod and nitrogen', 'Filter drier and service caps'] },
+    { t: 'Air Distribution', s: 'Plan duct after the CFM math.', ic: 'air', col: CAT.airflow, items: ['Duct and fittings by CFM', 'Registers, grilles, and boots', 'Flex, mastic, and straps'] },
+    { t: 'Equipment + Controls', s: 'Stage the change-out parts.', ic: 'device_thermostat', col: CAT.load, items: ['Condenser and air handler', 'Thermostat and control wire', 'Pads, whips, and disconnects'] },
   ];
   const rows = groups.map((g) => `<div style="margin-bottom:12px">${panel(`
     <div style="display:flex;align-items:flex-start">
@@ -289,9 +289,9 @@ function materials() {
 
 function worksheetDetail() {
   const work = [
-    ['Service panel replacement', 'Qty 1'],
-    ['#6 copper THHN feeder notes', 'Qty 80 ft'],
-    ['Label circuits and verify load', 'Qty 1'],
+    ['Condenser + air handler change-out', 'Qty 1'],
+    ['3-ton lineset + braze notes', 'Qty 25 ft'],
+    ['Evacuate, weigh charge, verify ΔT', 'Qty 1'],
   ].map(([title, qty]) => `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
     ${mi('check_circle', 18, T.amberB)}
     <div style="flex:1">
@@ -303,7 +303,7 @@ function worksheetDetail() {
     <div style="background:${T.panel};border:1px solid ${T.border};border-left:4px solid ${T.amberB};border-radius:20px;padding:16px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1">${label('JOB-202606-0004', T.amber, 4)}
-          <div style="font-family:${BODY};font-weight:900;font-size:22px;color:${T.text}">Rough-in punch list</div>
+          <div style="font-family:${BODY};font-weight:900;font-size:22px;color:${T.text}">Change-out punch list</div>
         </div>
         ${pill('Ready', 'info')}
       </div>
@@ -319,26 +319,26 @@ function worksheetDetail() {
   </div>`;
 }
 
-function serviceLoad() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Service Load', 'NEC 220 · Dwelling guide')}
-    ${panel(`${field('Dwelling area', '2,150', 'sq ft')}${field('Small appliance circuits', '2')}${field('Laundry circuits', '1')}${field('Range load', '12', 'kW')}${field('Dryer load', '5', 'kW')}${solveBtn('Calculate')}`)}
-    ${metricReadout({ tint: T.amberB, primary: [{ label: 'Service', value: '200', unit: 'A' }, { label: 'Demand', value: '32.8', unit: 'kVA' }], secondary: [{ label: 'General lighting', value: '6,450 VA' }, { label: 'Recommended minimum', value: '200 A' }] })}
+function superheatSubcool() {
+  return `<div style="padding:6px 20px 0">${calcHeader('Superheat / Subcool', 'Charging targets')}
+    ${panel(`${field('Refrigerant', 'R-410A')}${field('Metering device', 'TXV')}${field('Outdoor temp', '95', '°F')}${field('Indoor wet bulb', '63', '°F')}${solveBtn('Find target')}`)}
+    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Target subcool', value: '10.0', unit: '°F' }, { label: 'Refrigerant', value: 'R-410A' }], secondary: [{ label: 'Metering device', value: 'TXV' }, { label: 'Outdoor / indoor WB', value: '95°F / 63°F' }] })}
   </div>`;
 }
 
-function breakerWire() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Breaker + Wire', 'Continuous load · 125%')}
-    ${panel(`${field('Load current', '48', 'A')}${field('Continuous load', 'Yes')}${field('Conductor', 'Copper')}${field('Terminal rating', '75', '°C')}${solveBtn('Size circuit')}`)}
-    ${metricReadout({ tint: CAT.wire, primary: [{ label: 'Breaker', value: '60', unit: 'A' }, { label: 'Wire', value: '#6', unit: 'AWG Cu' }], secondary: [{ label: 'Calculated load', value: '60 A' }, { label: 'Reference', value: 'NEC 210.20(A)' }] })}
+function refrigerantLines() {
+  return `<div style="padding:6px 20px 0">${calcHeader('Refrigerant Lines', 'Suction & liquid sizing')}
+    ${panel(`${field('Refrigerant', 'R-410A')}${field('Capacity', '3.0', 'tons')}${field('Line length', '25', 'ft')}${field('Lift', '10', 'ft')}${solveBtn('Size lines')}`)}
+    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Suction', value: '7/8', unit: 'in' }, { label: 'Liquid', value: '3/8', unit: 'in' }], secondary: [{ label: 'System', value: 'R-410A · 3.0 tons' }, { label: 'Line length', value: '25 ft' }] })}
   </div>`;
 }
 
 function history() {
   const rows = [
-    ['Voltage Drop', '2.04% · PASS', CAT.voltage],
-    ['Wire Size', '#6 AWG Cu · PASS', CAT.wire],
-    ['Service Load', '200 A recommendation', T.amberB],
-    ['Conduit Fill', '31.4% · PASS', CAT.conduit],
+    ['Duct Sizing', '14" round · 1.11 ft²', CAT.duct],
+    ['Filter Velocity', '250 FPM · PASS', CAT.airflow],
+    ['Psychrometrics', 'SHR 0.60 · 36,000 BTU/hr', CAT.psychrometrics],
+    ['Superheat / Subcool', 'Target SC 10.0°F', CAT.refrigerant],
   ].map(([title, result, color]) => `<div style="margin-bottom:12px">${panel(`
     <div style="display:flex;align-items:center;gap:13px">
       ${iconTile('calculate', color, 44)}
@@ -393,15 +393,15 @@ html,body{width:${D.W}px;height:${D.H}px;overflow:hidden}
 
 // ── Render ──────────────────────────────────────────────────────────────
 const SHOTS = [
-  { out: '01-dashboard.png', body: dashboard, active: 'calc', line1: 'Run the math.', line2: 'In the field.', sub: 'NEC-aware electrical calculators, field-ready.' },
-  { out: '02-voltage-drop.png', body: voltageDrop, active: 'calc', line1: 'Pass or fail,', line2: 'instantly.', sub: 'Voltage drop with a clear 3% code check.' },
-  { out: '03-wire-size.png', body: wireSize, active: 'calc', line1: 'Sized to', line2: 'code.', sub: 'Minimum conductor from NEC 310.16 ampacity.' },
-  { out: '04-ohms.png', body: ohms, active: 'calc', line1: 'Any two values.', line2: 'Solved.', sub: "Ohm's Law — volts, amps, ohms, watts." },
+  { out: '01-dashboard.png', body: dashboard, active: 'calc', line1: 'Run the math.', line2: 'In the field.', sub: 'HVAC calculators built for the trade.' },
+  { out: '02-duct-sizing.png', body: ductSizing, active: 'calc', line1: 'Size ducts', line2: 'to spec.', sub: 'Round and rectangular from CFM and velocity.' },
+  { out: '03-filter-velocity.png', body: filterVelocity, active: 'calc', line1: 'Pass or fail,', line2: 'instantly.', sub: 'Filter face velocity with a clear target check.' },
+  { out: '04-psychrometrics.png', body: psychrometrics, active: 'calc', line1: 'Total, sensible,', line2: 'latent.', sub: 'Psychrometric loads in one readout.' },
   { out: '05-jobs.png', body: jobs, active: 'jobs', line1: 'Save job', line2: 'worksheets.', sub: 'Scope, quantities, and notes stay in BaseCalc.' },
   { out: '06-worksheet.png', body: worksheetDetail, active: 'jobs', line1: 'Handoff without', line2: 'invoicing.', sub: 'Send final billing work to SpeakSheet.' },
-  { out: '07-materials.png', body: materials, active: 'mat', line1: 'Plan the', line2: 'pull list.', sub: 'Materials reminders before closeout.' },
-  { out: '08-service-load.png', body: serviceLoad, active: 'calc', line1: 'Size services', line2: 'faster.', sub: 'Dwelling load guidance for field estimates.' },
-  { out: '09-breaker-wire.png', body: breakerWire, active: 'calc', line1: 'Breaker and wire,', line2: 'together.', sub: 'Continuous-load guidance in one screen.' },
+  { out: '07-materials.png', body: materials, active: 'mat', line1: 'Plan the', line2: 'truck stock.', sub: 'Material reminders before the install.' },
+  { out: '08-superheat.png', body: superheatSubcool, active: 'calc', line1: 'Charge it', line2: 'right.', sub: 'Superheat and subcool targets on the spot.' },
+  { out: '09-refrigerant-lines.png', body: refrigerantLines, active: 'calc', line1: 'Size the', line2: 'lineset.', sub: 'Suction and liquid lines by tonnage and run.' },
   { out: '10-history.png', body: history, active: 'his', line1: 'Keep the', line2: 'job record.', sub: 'Local calculation history for the field.' },
 ];
 
@@ -409,8 +409,8 @@ const SHOTS = [
 export {
   ROOT, TMP, CHROME, DEVICES, T, CAT, rgba, FONTCSS, BODY, DISP, MONO, mi, ICON,
   statusBar, tabBar, page,
-  dashboard, ohms, voltageDrop, wireSize, jobs, materials, worksheetDetail,
-  serviceLoad, breakerWire, history,
+  dashboard, ductSizing, filterVelocity, psychrometrics, jobs, materials, worksheetDetail,
+  superheatSubcool, refrigerantLines, history,
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
