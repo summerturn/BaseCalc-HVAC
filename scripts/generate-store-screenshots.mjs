@@ -45,6 +45,13 @@ const DEVICES = {
     head: { top: 150, size: 92, lh: 100, subSize: 44, subTop: 22, pad: 170 },
     glowH: 1200, gridSize: 120, shadow: '0 70px 110px rgba(0,0,0,0.55)',
   },
+  android: {
+    out: 'google-play/screenshots', W: 1080, H: 1920, iw: 393, island: false,
+    phone: { w: 786, h: 1572, left: 147, top: 300, r: 76, bezel: 16 },
+    screen: { w: 754, h: 1540, r: 54 },
+    head: { top: 92, size: 58, lh: 66, subSize: 27, subTop: 14, pad: 56 },
+    glowH: 860, gridSize: 70, shadow: '0 50px 76px rgba(0,0,0,0.55)',
+  },
 };
 
 // ── Theme (dark mode, from src/theme/appTheme.ts) ───────────────────────
@@ -414,7 +421,7 @@ export {
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const only = process.argv[2]; // optional: "iphone" or "ipad"
+  const only = process.argv[2]; // optional: "iphone", "ipad", or "android"
   for (const [name, D] of Object.entries(DEVICES)) {
     if (only && only !== name) continue;
     const outDir = join(ROOT, 'store-assets', D.out);

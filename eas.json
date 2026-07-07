@@ -37,13 +37,15 @@
       "ios": {
         "appleId": "summerlyn@basemapped.com",
         "ascAppId": "6786116451",
+        "appleTeamId": "MBLL9MNBLD",
         "language": "en-US",
         "sku": "basecalc-hvac-ios-001"
       },
       "android": {
         "serviceAccountKeyPath": "./deploy/google-play-service-account.json",
         "track": "internal",
-        "releaseStatus": "completed"
+        "releaseStatus": "draft",
+        "changesNotSentForReview": true
       }
     }
   }

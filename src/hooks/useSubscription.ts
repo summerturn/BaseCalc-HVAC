@@ -1,15 +1,13 @@
 import { Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
-import { FREE_TIER_LIMITS, isRevenueCatConfigured } from '../lib/config';
+import { FREE_TIER_LIMITS } from '../lib/config';
 
 export function useSubscription() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { isPro, clients, invoices } = useAppStore();
-  const purchasesEnabled = isRevenueCatConfigured();
 
   const canAddClient = (): boolean => {
-    if (!purchasesEnabled) return true;
     if (isPro) return true;
     if (clients.length < FREE_TIER_LIMITS.maxClients) return true;
     showLimitPrompt('client');
@@ -17,7 +15,6 @@ export function useSubscription() {
   };
 
   const canAddInvoice = (): boolean => {
-    if (!purchasesEnabled) return true;
     if (isPro) return true;
     const active = invoices.filter((i) => i.status !== 'paid');
     if (active.length < FREE_TIER_LIMITS.maxActiveInvoices) return true;

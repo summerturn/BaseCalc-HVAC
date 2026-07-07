@@ -2,15 +2,15 @@
 
 ## App Name
 
-BaseCalc HVAC
+BaseCalc HVAC Calculator
 
 ## Short Description
 
-HVAC calculators, worksheets, and field math.
+HVAC calculator for BTU, CFM, duct sizing, refrigerant, and worksheets.
 
 ## Full Description
 
-BaseCalc HVAC gives technicians fast field calculators and clean job workflow tools in one app. Run the math on site, save the result, build a job worksheet, and send final billing through SpeakSheet when the job is ready.
+BaseCalc HVAC Calculator is an HVAC calculator for field math, worksheets, materials, and saved calculation history. Run BTU, CFM, duct sizing, airflow, psychrometrics, refrigerant line, superheat, subcooling, load, hydronics, and other HVAC calculator checks on site, then save the result for the job.
 
 18 CALCULATORS FOR DAILY FIELD WORK
 - BTU ↔ Tons: convert between BTU/hr and refrigeration tons.

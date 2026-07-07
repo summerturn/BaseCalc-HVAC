@@ -4,25 +4,25 @@
     "version": "1.0.0",
     "info": {
       "en-US": {
-        "title": "BaseCalc HVAC",
-        "subtitle": "HVAC Calculator & Tools",
-        "promoText": "18 HVAC field calculators with saved history, materials planning, job records, and worksheet PDF export.",
-        "description": "BaseCalc HVAC gives technicians fast field calculators and clean job workflow tools in one app. Run the math on site, save the result, build a job worksheet, and send final billing through SpeakSheet when the job is ready.\n\n18 CALCULATORS FOR DAILY FIELD WORK\n• BTU ↔ Tons — convert between BTU/hr and refrigeration tons.\n• CFM from BTU — airflow from load and temperature rise/drop.\n• BTU from CFM — load from airflow and temperature difference.\n• Duct Sizing — round and rectangular duct from CFM and velocity.\n• Air Velocity — velocity from CFM and cross-sectional area.\n• Psychrometrics — total, sensible, and latent BTU/hr estimates.\n• Refrigerant Lines — suction and liquid line size recommendations.\n• Superheat / Subcooling — target superheat and subcooling guides.\n• Room Load — quick cooling/heating load estimate.\n• Heat Pump Balance — balance point between capacity and heat loss.\n• Hydronics — BTU, GPM, and ΔT relationships.\n• Mixed Air — mixed-air temperature from outdoor and return air.\n• Air Changes — ACH from CFM and room volume.\n• Evaporative Cooling — supply temperature and tonnage estimate.\n• Filter Velocity — face velocity and pressure drop estimate.\n• Combustion Analysis — excess air from O2 or CO2 readings.\n• Refrigerant Weight — line-set charge estimate in ounces and pounds.\n• Economizer — minimum outdoor air CFM per ASHRAE 62.1 concepts.\n\nEVERY RESULT IS EXPLAINED\n• Clear sizing messages and pass/fail where applicable.\n• The governing limit, final answer, and calculation breakdown.\n• Saved local history so you keep a job-site record.\n\nJOB RECORDS, MATERIALS, AND WORKSHEETS\n• Save job contacts with site notes.\n• Build job worksheets with scope, quantities, and site notes.\n• Export worksheet PDFs for internal handoff or customer context.\n• Plan common pull-list items before rough-in, service, and closeout.\n• Send the finished billing handoff to SpeakSheet for the final invoice.\n\nDEVICE-LOCAL FOR THE FIELD\n• Works offline by default.\n• No BaseCalc account or cloud sync.\n• Job contact, worksheet, setting, and calculation data stays on this device, protected by your device security.\n• There is no BaseCalc cloud option.\n• Dark and light themes with a high-contrast job-site interface.\n\nBaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.",
+        "title": "BaseCalc HVAC Calculator",
+        "subtitle": "BTU CFM Duct Calculator",
+        "promoText": "HVAC calculator for field math: BTU, CFM, duct sizing, refrigerant, superheat, subcooling, saved history, worksheets, and materials.",
+        "description": "BaseCalc HVAC Calculator is an HVAC calculator for field math, worksheets, materials, and saved calculation history. Run BTU, CFM, duct sizing, airflow, psychrometrics, refrigerant line, superheat, subcooling, load, hydronics, and other HVAC calculator checks on site, then save the result for the job.\n\n18 CALCULATORS FOR DAILY FIELD WORK\n• BTU ↔ Tons — convert between BTU/hr and refrigeration tons.\n• CFM from BTU — airflow from load and temperature rise/drop.\n• BTU from CFM — load from airflow and temperature difference.\n• Duct Sizing — round and rectangular duct from CFM and velocity.\n• Air Velocity — velocity from CFM and cross-sectional area.\n• Psychrometrics — total, sensible, and latent BTU/hr estimates.\n• Refrigerant Lines — suction and liquid line size recommendations.\n• Superheat / Subcooling — target superheat and subcooling guides.\n• Room Load — quick cooling/heating load estimate.\n• Heat Pump Balance — balance point between capacity and heat loss.\n• Hydronics — BTU, GPM, and ΔT relationships.\n• Mixed Air — mixed-air temperature from outdoor and return air.\n• Air Changes — ACH from CFM and room volume.\n• Evaporative Cooling — supply temperature and tonnage estimate.\n• Filter Velocity — face velocity and pressure drop estimate.\n• Combustion Analysis — excess air from O2 or CO2 readings.\n• Refrigerant Weight — line-set charge estimate in ounces and pounds.\n• Economizer — minimum outdoor air CFM per ASHRAE 62.1 concepts.\n\nEVERY RESULT IS EXPLAINED\n• Clear sizing messages and pass/fail where applicable.\n• The governing limit, final answer, and calculation breakdown.\n• Saved local history so you keep a job-site record.\n\nJOB RECORDS, MATERIALS, AND WORKSHEETS\n• Save job contacts with site notes.\n• Build job worksheets with scope, quantities, and site notes.\n• Export worksheet PDFs for internal handoff or customer context.\n• Plan common pull-list items before rough-in, service, and closeout.\n• Send the finished billing handoff to SpeakSheet for the final invoice.\n\nDEVICE-LOCAL FOR THE FIELD\n• Works offline by default.\n• No BaseCalc account or cloud sync.\n• Job contact, worksheet, setting, and calculation data stays on this device, protected by your device security.\n• There is no BaseCalc cloud option.\n• Dark and light themes with a high-contrast job-site interface.\n\nBaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.",
         "keywords": [
           "hvac",
           "calculator",
-          "btu",
-          "cfm",
+          "BTU",
+          "CFM",
           "duct",
+          "sizing",
+          "airflow",
           "refrigerant",
           "superheat",
           "subcooling",
           "load",
-          "psychrometrics",
-          "hydronics",
-          "airflow"
+          "psychrometric"
         ],
-        "releaseNotes": "Initial release of BaseCalc HVAC with 18 HVAC field calculators, saved local history, materials planning, worksheet PDF export, SpeakSheet handoff, and device-local offline storage.",
+        "releaseNotes": "Initial release of BaseCalc HVAC Calculator with 18 HVAC field calculators, saved local history, materials planning, worksheet PDF export, SpeakSheet handoff, and device-local offline storage.",
         "marketingUrl": "https://basemapped.com/products/basecalc-hvac",
         "supportUrl": "https://basemapped.com/basecalc-hvac/support",
         "privacyPolicyUrl": "https://basemapped.com/basecalc-hvac/privacy-policy"

@@ -1,11 +1,10 @@
 import { type ComponentProps, useState } from 'react';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import { useAppTheme, useColors } from '../theme/useAppTheme';
 import type { ThemeMode } from '../theme/appTheme';
-import { isRevenueCatConfigured } from '../lib/config';
 import { Body, Label, Mono, Small } from '../components/Type';
 import {
   CONTROL_GAP,
@@ -39,7 +38,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function SettingsScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { company, updateCompany, isPro } = useAppStore();
   const { themeMode, setThemeMode } = useAppTheme();
   const c = useColors();
@@ -48,7 +47,6 @@ export function SettingsScreen() {
   const [form, setForm] = useState({ ...company });
   const [saved, setSaved] = useState(false);
   const stackLocationFields = width < 360;
-  const purchasesEnabled = isRevenueCatConfigured();
 
   const handleSave = () => {
     updateCompany(form);
@@ -61,24 +59,22 @@ export function SettingsScreen() {
       <ListScreenScrollView bottomPadding={bottomClearance}>
         <ListScreenHeader title="Settings" />
 
-        {purchasesEnabled ? (
-          <Section title="Plan">
-            <Panel>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1, paddingRight: 14 }}>
-                  <Body tone="primary">{isPro ? 'Pro plan' : 'Free plan'}</Body>
-                  <Small tone="muted" style={{ marginTop: 4 }}>
-                    {isPro ? 'Ads are hidden and Pro limits are unlocked on this device.' : 'Upgrade to remove ads and unlock the full local workflow.'}
-                  </Small>
-                </View>
-                <MaterialIcons name={isPro ? 'workspace-premium' : 'person-outline'} size={24} color={isPro ? c.amber : c.textMuted} />
+        <Section title="Plan">
+          <Panel>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, paddingRight: 14 }}>
+                <Body tone="primary">{isPro ? 'Pro plan' : 'Free plan'}</Body>
+                <Small tone="muted" style={{ marginTop: 4 }}>
+                  {isPro ? 'Ads are hidden and Pro limits are unlocked on this device.' : 'Upgrade to remove ads and unlock the full local workflow.'}
+                </Small>
               </View>
-              {!isPro ? (
-                <PrimaryButton label="Go Pro" icon="workspace-premium" onPress={() => navigation.navigate('Paywall')} style={{ marginTop: 14 }} />
-              ) : null}
-            </Panel>
-          </Section>
-        ) : null}
+              <MaterialIcons name={isPro ? 'workspace-premium' : 'person-outline'} size={24} color={isPro ? c.amber : c.textMuted} />
+            </View>
+            {!isPro ? (
+              <PrimaryButton label="Go Pro" icon="workspace-premium" onPress={() => navigation.navigate('Paywall')} style={{ marginTop: 14 }} />
+            ) : null}
+          </Panel>
+        </Section>
 
         <Section title="Appearance">
           <View style={{ flexDirection: 'row', gap: 10 }}>

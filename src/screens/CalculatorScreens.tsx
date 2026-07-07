@@ -1,5 +1,5 @@
 import { type ComponentProps, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -49,27 +49,28 @@ type CalcDef = {
   code: string;
   route: string;
   color: string;
+  proOnly?: boolean;
 };
 
 const CALCS: CalcDef[] = [
   { key: 'btu-tons', title: 'BTU ↔ Tons', subtitle: 'Capacity conversion', icon: 'whatshot', code: '12,000 BTU/ton', route: 'BtuTons', color: CATEGORY.load },
   { key: 'cfm-btu', title: 'CFM from BTU', subtitle: 'Airflow from load', icon: 'air', code: 'Q = BTU ÷ (1.08 × ΔT)', route: 'CfmFromBtu', color: CATEGORY.airflow },
   { key: 'btu-cfm', title: 'BTU from CFM', subtitle: 'Load from airflow', icon: 'thermostat', code: 'Q = CFM × 1.08 × ΔT', route: 'BtuFromCfm', color: CATEGORY.airflow },
-  { key: 'duct', title: 'Duct Sizing', subtitle: 'Round & rectangular', icon: 'line-weight', code: 'Area = CFM ÷ V', route: 'DuctSizing', color: CATEGORY.duct },
   { key: 'velocity', title: 'Air Velocity', subtitle: 'FPM from CFM', icon: 'speed', code: 'V = CFM ÷ A', route: 'AirVelocity', color: CATEGORY.airflow },
-  { key: 'psych', title: 'Psychrometrics', subtitle: 'Total / sensible / latent', icon: 'water-drop', code: '4.5 × CFM × Δh', route: 'Psychrometrics', color: CATEGORY.psychrometrics },
-  { key: 'lines', title: 'Refrigerant Lines', subtitle: 'Suction & liquid sizes', icon: 'linear-scale', code: 'Line sizing', route: 'RefrigerantLines', color: CATEGORY.refrigerant },
-  { key: 'sh-sc', title: 'Superheat / Subcool', subtitle: 'Charging targets', icon: 'device-thermostat', code: 'SH target', route: 'SuperheatSubcool', color: CATEGORY.refrigerant },
-  { key: 'room-load', title: 'Room Load', subtitle: 'Quick load estimate', icon: 'room', code: 'Load calc', route: 'RoomLoad', color: CATEGORY.load },
-  { key: 'hp-balance', title: 'Heat Pump Balance', subtitle: 'Balance point', icon: 'balance', code: 'Capacity vs loss', route: 'HeatPumpBalance', color: CATEGORY.load },
-  { key: 'hydronics', title: 'Hydronics', subtitle: 'BTU · GPM · ΔT', icon: 'water', code: 'Q = 500 × GPM × ΔT', route: 'Hydronics', color: CATEGORY.hydronics },
-  { key: 'mixed-air', title: 'Mixed Air', subtitle: 'OA + RA blend', icon: 'compare-arrows', code: 'MAT blend', route: 'MixedAir', color: CATEGORY.airflow },
-  { key: 'ach', title: 'Air Changes', subtitle: 'ACH from CFM', icon: 'cached', code: 'ACH = CFM × 60 ÷ V', route: 'AirChanges', color: CATEGORY.airflow },
-  { key: 'evap', title: 'Evaporative Cooling', subtitle: 'Supply DB & tons', icon: 'opacity', code: 'Swamp cooler', route: 'EvaporativeCooling', color: CATEGORY.efficiency },
-  { key: 'filter', title: 'Filter Velocity', subtitle: 'Face velocity & ΔP', icon: 'filter-alt', code: 'V = CFM ÷ A', route: 'FilterVelocity', color: CATEGORY.duct },
-  { key: 'combustion', title: 'Combustion Analysis', subtitle: 'Excess air %', icon: 'fireplace', code: 'Excess air', route: 'CombustionAnalysis', color: CATEGORY.general },
-  { key: 'charge', title: 'Refrigerant Weight', subtitle: 'Line-set charge', icon: 'scale', code: 'oz / lb', route: 'RefrigerantWeight', color: CATEGORY.refrigerant },
-  { key: 'economizer', title: 'Economizer', subtitle: 'Minimum OA CFM', icon: 'cloud', code: 'OA = people + area', route: 'Economizer', color: CATEGORY.airflow },
+  { key: 'duct', title: 'Duct Sizing', subtitle: 'Round & rectangular', icon: 'line-weight', code: 'Area = CFM ÷ V', route: 'DuctSizing', color: CATEGORY.duct, proOnly: true },
+  { key: 'psych', title: 'Psychrometrics', subtitle: 'Total / sensible / latent', icon: 'water-drop', code: '4.5 × CFM × Δh', route: 'Psychrometrics', color: CATEGORY.psychrometrics, proOnly: true },
+  { key: 'lines', title: 'Refrigerant Lines', subtitle: 'Suction & liquid sizes', icon: 'linear-scale', code: 'Line sizing', route: 'RefrigerantLines', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'sh-sc', title: 'Superheat / Subcool', subtitle: 'Charging targets', icon: 'device-thermostat', code: 'SH target', route: 'SuperheatSubcool', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'room-load', title: 'Room Load', subtitle: 'Quick load estimate', icon: 'room', code: 'Load calc', route: 'RoomLoad', color: CATEGORY.load, proOnly: true },
+  { key: 'hp-balance', title: 'Heat Pump Balance', subtitle: 'Balance point', icon: 'balance', code: 'Capacity vs loss', route: 'HeatPumpBalance', color: CATEGORY.load, proOnly: true },
+  { key: 'hydronics', title: 'Hydronics', subtitle: 'BTU · GPM · ΔT', icon: 'water', code: 'Q = 500 × GPM × ΔT', route: 'Hydronics', color: CATEGORY.hydronics, proOnly: true },
+  { key: 'mixed-air', title: 'Mixed Air', subtitle: 'OA + RA blend', icon: 'compare-arrows', code: 'MAT blend', route: 'MixedAir', color: CATEGORY.airflow, proOnly: true },
+  { key: 'ach', title: 'Air Changes', subtitle: 'ACH from CFM', icon: 'cached', code: 'ACH = CFM × 60 ÷ V', route: 'AirChanges', color: CATEGORY.airflow, proOnly: true },
+  { key: 'evap', title: 'Evaporative Cooling', subtitle: 'Supply DB & tons', icon: 'opacity', code: 'Swamp cooler', route: 'EvaporativeCooling', color: CATEGORY.efficiency, proOnly: true },
+  { key: 'filter', title: 'Filter Velocity', subtitle: 'Face velocity & ΔP', icon: 'filter-alt', code: 'V = CFM ÷ A', route: 'FilterVelocity', color: CATEGORY.duct, proOnly: true },
+  { key: 'combustion', title: 'Combustion Analysis', subtitle: 'Excess air %', icon: 'fireplace', code: 'Excess air', route: 'CombustionAnalysis', color: CATEGORY.general, proOnly: true },
+  { key: 'charge', title: 'Refrigerant Weight', subtitle: 'Line-set charge', icon: 'scale', code: 'oz / lb', route: 'RefrigerantWeight', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'economizer', title: 'Economizer', subtitle: 'Minimum OA CFM', icon: 'cloud', code: 'OA = people + area', route: 'Economizer', color: CATEGORY.airflow, proOnly: true },
 ];
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -88,6 +89,7 @@ function CalcCard({
   large,
   cardWidth,
   cardHeight,
+  locked,
 }: {
   calc: CalcDef;
   featured?: boolean;
@@ -96,9 +98,12 @@ function CalcCard({
   large?: boolean;
   cardWidth: number;
   cardHeight?: number;
+  locked?: boolean;
 }) {
   const c = useColors();
   const contentColumnWidth = Math.max(96, Math.min(cardWidth - 28, large ? 170 : compact ? 118 : 136));
+  const showProText = Boolean(locked && !compact && cardWidth >= 176);
+  const badgeSide = compact ? 26 : 28;
   const base = {
     backgroundColor: c.panel,
     borderColor: c.border,
@@ -177,6 +182,31 @@ function CalcCard({
           </Label>
         </View>
       </View>
+      {locked ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: compact ? 7 : 10,
+            right: compact ? 7 : 10,
+            width: showProText ? undefined : badgeSide,
+            minWidth: showProText ? undefined : badgeSide,
+            height: showProText ? undefined : badgeSide,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: showProText ? 4 : 0,
+            backgroundColor: c.amberSoft,
+            borderColor: withAlpha(c.amberBright, 0.55),
+            borderWidth: 1,
+            borderRadius: 999,
+            paddingHorizontal: showProText ? 8 : 0,
+            paddingVertical: showProText ? 4 : 0,
+          }}
+        >
+          <MaterialIcons name="lock" size={showProText ? 12 : 14} color={c.amberBright} />
+          {showProText ? <Label tone="amber" style={{ fontSize: 10 }}>PRO</Label> : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -232,6 +262,7 @@ function BrandLockup({ compact }: { compact: boolean }) {
 
 export function CalculatorDashboardScreen({ navigation }: { navigation: { navigate: (s: string) => void } }) {
   const c = useColors();
+  const { isPro } = useAppStore();
   const { width } = useWindowDimensions();
   const bottomClearance = useBottomClearance();
   const isTablet = width >= TABLET_BREAKPOINT;
@@ -246,6 +277,20 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
   const rawCardHeight = Math.round(cardWidth * (isTablet ? 1.03 : compact ? 1.18 : 1.12));
   const cardHeight = Math.max(compact ? 168 : 176, Math.min(isTablet ? 230 : 214, rawCardHeight));
   const rows = chunk(CALCS, columns);
+  const openCalculator = (calc: CalcDef) => {
+    if (calc.proOnly && !isPro) {
+      Alert.alert(
+        'Pro calculator',
+        `${calc.title} is part of BaseCalc HVAC Pro. Upgrade to unlock every HVAC calculator.`,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade', onPress: () => navigation.navigate('Paywall') },
+        ]
+      );
+      return;
+    }
+    navigation.navigate(calc.route);
+  };
 
   return (
     <Screen>
@@ -304,7 +349,8 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
                       large={isTablet}
                       cardWidth={cardWidth}
                       cardHeight={cardHeight}
-                      onPress={() => navigation.navigate(calc.route)}
+                      locked={Boolean(calc.proOnly && !isPro)}
+                      onPress={() => openCalculator(calc)}
                     />
                   </View>
                 ))}

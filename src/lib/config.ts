@@ -43,9 +43,11 @@ export function getBannerAdUnitId(): string {
 }
 
 export const SUBSCRIPTION_TIERS = {
-  monthly: 'basecalc_electric_pro_monthly',
-  yearly: 'basecalc_electric_pro_yearly',
+  monthly: 'basecalc_hvac_pro_monthly',
+  yearly: 'basecalc_hvac_pro_yearly',
 };
+
+export const SUBSCRIPTION_ENTITLEMENT_ID = 'pro';
 
 export const FREE_TIER_LIMITS = {
   maxClients: 3,

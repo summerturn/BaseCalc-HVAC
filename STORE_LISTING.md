@@ -1,29 +1,29 @@
-# BaseCalc HVAC — Store Listing Copy
+# BaseCalc HVAC Calculator — Store Listing Copy
 
-Source of truth for App Store Connect and Google Play listing text. Values mirror `store.config.json` where supported. Last optimized for ASO: 2026-06-26.
+Source of truth for App Store Connect and Google Play listing text. Values mirror `store.config.json` where supported. Last optimized for ASO: 2026-07-06.
 
 ## Positioning
 
-- **Brand:** BaseCalc HVAC
+- **Brand:** BaseCalc HVAC Calculator
 - **Bundle/package:** `com.basemapped.basecalchvac`
-- **One-liner:** Run HVAC math on site, save job worksheets, finish billing in SpeakSheet.
+- **One-liner:** Run HVAC calculator math on site, save job worksheets, finish billing in SpeakSheet.
 - **Audience:** HVAC technicians, installers, service contractors, estimators, and building operators.
-- **Primary search intent:** HVAC calculator, BTU calculator, CFM calculator, duct sizing, refrigerant, superheat, subcooling, hydronics, psychrometrics.
+- **Primary search intent:** HVAC calculator, BTU calculator, CFM calculator, duct sizing calculator, airflow calculator, refrigerant calculator, superheat calculator, subcooling calculator, hydronics, psychrometrics.
 - **Differentiator:** 18 field calculators plus local job records, materials planning, job worksheet PDFs, and a clean SpeakSheet handoff.
 
 ## Apple App Store
 
 | Field | Value | Count / Limit |
 |---|---|---|
-| **Title** | `BaseCalc HVAC` | 14 / 30 |
-| **Subtitle** | `HVAC Calculator & Tools` | 23 / 30 |
-| **Keywords** | `hvac,calculator,btu,cfm,duct,refrigerant,superheat,subcooling,load,psychrometrics,hydronics,airflow` | 95 / 100 |
-| **Promotional Text** | `18 HVAC field calculators with saved history, materials planning, job records, and worksheet PDF export.` | 112 / 170 |
+| **Title** | `BaseCalc HVAC Calculator` | 24 / 30 |
+| **Subtitle** | `BTU CFM Duct Calculator` | 23 / 30 |
+| **Keywords** | `hvac,calculator,BTU,CFM,duct,sizing,airflow,refrigerant,superheat,subcooling,load,psychrometric` | 95 / 100 |
+| **Promotional Text** | `HVAC calculator for field math: BTU, CFM, duct sizing, refrigerant, superheat, subcooling, saved history, worksheets, and materials.` | 132 / 170 |
 
 **Description**
 
 ```
-BaseCalc HVAC gives technicians fast field calculators and clean job workflow tools in one app. Run the math on site, save the result, build a job worksheet, and send final billing through SpeakSheet when the job is ready.
+BaseCalc HVAC Calculator is an HVAC calculator for field math, worksheets, materials, and saved calculation history. Run BTU, CFM, duct sizing, airflow, psychrometrics, refrigerant line, superheat, subcooling, load, hydronics, and other HVAC calculator checks on site, then save the result for the job.
 
 18 CALCULATORS FOR DAILY FIELD WORK
 • BTU ↔ Tons — convert between BTU/hr and refrigeration tons.
@@ -70,15 +70,15 @@ BaseCalc HVAC is a professional reference tool. Always verify against current in
 **Release notes**
 
 ```
-Initial release of BaseCalc HVAC with 18 HVAC field calculators, saved local history, materials planning, worksheet PDF export, SpeakSheet handoff, and device-local offline storage.
+Initial release of BaseCalc HVAC Calculator with 18 HVAC field calculators, saved local history, materials planning, worksheet PDF export, SpeakSheet handoff, and device-local offline storage.
 ```
 
 **Categories:** Primary `Utilities`, Secondary `Business`.
 
 ## Google Play
 
-- **App name:** `BaseCalc HVAC`
-- **Short description:** `HVAC calculators, job history, and worksheets.`
+- **App name:** `BaseCalc HVAC Calculator`
+- **Short description:** `HVAC calculator for BTU, CFM, duct sizing, refrigerant, and worksheets.`
 - **Full description:** use the Apple description above. Google indexes title, short description, and full description, so keep the 18 calculator names visible.
 
 ## Launch Declarations
