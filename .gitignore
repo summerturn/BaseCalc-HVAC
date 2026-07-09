@@ -58,3 +58,5 @@ yarn-error.*
 
 # accidental local script duplicates
 /scripts/generate-brand-assets 2.mjs
+.env.local
+Thumbs.db
