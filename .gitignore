@@ -60,3 +60,7 @@ yarn-error.*
 /scripts/generate-brand-assets 2.mjs
 .env.local
 Thumbs.db
+__pycache__/
+.next/
+.wrangler/
+.temp/
