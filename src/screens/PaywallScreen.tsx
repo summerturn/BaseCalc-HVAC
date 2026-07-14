@@ -1,5 +1,5 @@
 import { type ComponentProps, useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PURCHASES_ERROR_CODE, type PurchasesStoreProduct } from 'react-native-purchases';
@@ -46,6 +46,9 @@ type StoreStatus = {
   label: string;
   tone: 'pass' | 'info' | 'fail';
 };
+
+const PRIVACY_POLICY_URL = 'https://basemapped.com/basecalc-hvac/privacy-policy';
+const TERMS_OF_USE_URL = 'https://basemapped.com/basecalc/terms-of-service';
 
 const FREE_ACCESS: AccessSection = {
   title: 'Free',
@@ -126,6 +129,19 @@ function errorMessage(error: unknown): string {
 function storeUnavailableMessage(): string {
   const storeName = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
   return `The ${storeName} checkout is not available for this install yet. Please use a store-enabled build after the subscription products finish syncing.`;
+}
+
+async function openLegalDocument(url: string): Promise<void> {
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      throw new Error('This link is not supported on this device.');
+    }
+    await Linking.openURL(url);
+  } catch (error) {
+    console.error('[Paywall] Failed to open legal document:', error);
+    Alert.alert('Unable to open link', 'Please try again from a device with an internet connection.');
+  }
 }
 
 function storeProductForPlan(storefront: SubscriptionStorefront | null, plan: PlanKey): PurchasesStoreProduct | null {
@@ -413,6 +429,15 @@ export function PaywallScreen() {
         <Small tone="muted" style={{ textAlign: 'center', marginTop: 18 }}>
           Subscriptions auto-renew until cancelled. Manage or cancel from your App Store or Google Play account settings.
         </Small>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 8, marginTop: 10 }}>
+          <Pressable accessibilityRole="link" onPress={() => void openLegalDocument(PRIVACY_POLICY_URL)}>
+            <Small tone="primary" style={{ textDecorationLine: 'underline' }}>Privacy Policy</Small>
+          </Pressable>
+          <Pressable accessibilityRole="link" onPress={() => void openLegalDocument(TERMS_OF_USE_URL)}>
+            <Small tone="primary" style={{ textDecorationLine: 'underline' }}>Terms of Use (EULA)</Small>
+          </Pressable>
+        </View>
 
         <View style={{ flexDirection: compact ? 'column' : 'row', gap: 12, marginTop: 18, marginBottom: 14 }}>
           <AccessPanel section={FREE_ACCESS} compact={compact} />
