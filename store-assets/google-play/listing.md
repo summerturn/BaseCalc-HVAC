@@ -19,22 +19,22 @@ BaseCalc HVAC Calculator is an HVAC calculator for field math, worksheets, mater
 - Duct Sizing: round and rectangular duct from CFM and velocity.
 - Air Velocity: velocity from CFM and cross-sectional area.
 - Psychrometrics: total, sensible, and latent BTU/hr estimates.
-- Refrigerant Lines: suction and liquid line size recommendations.
-- Superheat / Subcooling: target superheat and subcooling guides.
-- Room Load: quick cooling/heating load estimate.
-- Heat Pump Balance: balance point between capacity and heat loss.
+- Refrigerant Lines: check entered manufacturer line data against an entered equivalent-length limit.
+- Superheat / Subcooling: record the exact target supplied by the equipment manufacturer.
+- Room Load: preliminary area-factor planning math using your supplied factor; not Manual J.
+- Heat Pump Balance: interpolate a bracketed balance point from entered manufacturer capacity data.
 - Hydronics: BTU, GPM, and ΔT relationships.
 - Mixed Air: mixed-air temperature from outdoor and return air.
 - Air Changes: ACH from CFM and room volume.
-- Evaporative Cooling: supply temperature and tonnage estimate.
-- Filter Velocity: face velocity and pressure drop estimate.
-- Combustion Analysis: excess air from O2 or CO2 readings.
-- Refrigerant Weight: line-set charge estimate in ounces and pounds.
-- Economizer: minimum outdoor air CFM per ASHRAE 62.1 concepts.
+- Evaporative Cooling: supply temperature and sensible air-side estimate.
+- Filter Velocity: filter face velocity; use manufacturer data for pressure drop.
+- O₂ Excess Air: theoretical dry-flue-gas dilution estimate from measured O₂; not a safety result.
+- Refrigerant Weight: additional charge from an entered manufacturer allowance and rate.
+- Outdoor Airflow: breathing-zone airflow arithmetic from user-supplied per-person and per-area rates.
 
 EVERY RESULT IS EXPLAINED
-- Clear sizing messages and pass/fail where applicable.
-- The governing limit, final answer, and calculation breakdown.
+- Explicit input validation, assumptions, and calculation boundaries.
+- Final arithmetic and a calculation breakdown where the supplied data supports one.
 - Saved local history so you keep a job-site record.
 
 JOB RECORDS, MATERIALS, AND WORKSHEETS
@@ -47,8 +47,9 @@ JOB RECORDS, MATERIALS, AND WORKSHEETS
 DEVICE-LOCAL FOR THE FIELD
 - Works offline by default.
 - No BaseCalc account or cloud sync.
-- Job contact, worksheet, setting, and calculation data stays on this device, protected by your device security.
-- There is no BaseCalc cloud option.
+- Job contacts, worksheets, settings, and calculation history use the app's local storage.
+- Subscription status is checked through RevenueCat; exports leave the app only when you choose to share them.
+- No third-party advertising SDK or third-party ads in this release.
 - Dark and light themes with a high-contrast job-site interface.
 
 BaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.
@@ -57,7 +58,7 @@ BaseCalc HVAC is a professional reference tool. Always verify against current in
 
 - App icon: `store-assets/google-play/icon-512.png`
 - Feature graphic: `store-assets/google-play/feature-graphic.png`
-- Phone screenshots: use `store-assets/screenshots/01-dashboard.png` through `store-assets/screenshots/10-history.png`
+- Phone screenshots: upload `store-assets/google-play/panorama/01-panorama.png` through `05-panorama.png` first, then `store-assets/google-play/screenshots/01-dashboard.png` through `03-filter-velocity.png`
 - Tablet screenshots: use `store-assets/screenshots-ipad/01-dashboard.png` through `store-assets/screenshots-ipad/10-history.png`
 
 ## Contact And Legal URLs

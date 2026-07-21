@@ -18,8 +18,8 @@ import { SafeAreaView, type Edge, useSafeAreaInsets } from 'react-native-safe-ar
 import { MaterialIcons } from '@expo/vector-icons';
 import { Fonts } from '../theme/typography';
 import { useColors } from '../theme/useAppTheme';
-import type { CalculationResult, MetricResult } from '../engine/HAVACEngine';
-import { Body, Display, Label, Mono, MonoXL, Small, H2 } from './Type';
+import type { MetricResult } from '../engine/HAVACEngine';
+import { Body, Display, Label, Mono, Small, H2 } from './Type';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -301,7 +301,7 @@ type FieldProps = {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
-  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'email-address' | 'phone-pad';
+  keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'numbers-and-punctuation' | 'email-address' | 'phone-pad';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoComplete?: 'email' | 'password' | 'name' | 'tel' | 'street-address' | 'postal-code' | 'off';
   secureTextEntry?: boolean;
@@ -539,13 +539,14 @@ export function PrimaryButton({
 }
 
 export function SecondaryButton({
-  label, onPress, icon, tint, style,
+  label, onPress, icon, tint, style, disabled = false,
 }: {
   label: string;
   onPress: () => void;
   icon?: IconName;
   tint?: string; // hex accent; when set, button is tinted
   style?: ViewStyle;
+  disabled?: boolean;
 }) {
   const c = useColors();
   const fg = tint ?? (c.mode === 'light' ? c.text : c.textDim);
@@ -556,6 +557,8 @@ export function SecondaryButton({
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
+      accessibilityState={{ disabled }}
       style={({ pressed }) => [
         {
           flex: 1,
@@ -568,7 +571,7 @@ export function SecondaryButton({
           borderWidth: 1,
           borderRadius: 13,
           paddingVertical: 13,
-          opacity: pressed ? 0.7 : 1,
+          opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
         },
         style,
       ]}
@@ -713,73 +716,6 @@ export function EmptyState({ icon, title, subtitle }: { icon: IconName; title: s
   );
 }
 
-/** LCD-style meter readout for calculator results. */
-export function ResultReadout({ result }: { result: CalculationResult | null }) {
-  const c = useColors();
-  if (!result) return null;
-  const ok = result.passes;
-  const accent = ok ? c.pass : c.fail;
-  const intUnits = ['AWG', 'kcmil'];
-  const display =
-    !Number.isFinite(result.value) ? '—'
-      : intUnits.includes(result.unit) ? String(Math.round(result.value))
-        : result.value.toFixed(2);
-
-  return (
-    <View style={{ marginTop: 20 }}>
-      <Label style={{ marginBottom: 8 }}>Result</Label>
-      <View style={{ backgroundColor: c.inset, borderColor: c.border, borderWidth: 1, borderRadius: 18, overflow: 'hidden' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', padding: 18, paddingBottom: 12 }}>
-          <View style={{ flex: 1, paddingRight: 12 }}>
-            <MonoXL numberOfLines={1} adjustsFontSizeToFit>{display}</MonoXL>
-            <Mono tone="muted" style={{ marginTop: 4 }} numberOfLines={1}>
-              {result.unit}
-              {result.limit != null ? `   ·   limit ${result.limit}` : ''}
-            </Mono>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 7,
-              backgroundColor: ok ? c.passBg : c.failBg,
-              borderColor: ok ? c.passBorder : c.failBorder,
-              borderWidth: 1,
-              borderRadius: 999,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-            }}
-          >
-            <View style={{ width: 9, height: 9, borderRadius: 9, backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.9, shadowRadius: 6 }} />
-            <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: Fonts.label, fontSize: 12, lineHeight: 16, letterSpacing: 1.5, color: accent }}>{ok ? 'PASS' : 'FAIL'}</Text>
-          </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 18, paddingBottom: result.details.length ? 14 : 18 }}>
-          <Body tone="primary" style={{ fontSize: 14.5 }}>{result.message}</Body>
-        </View>
-
-        {result.details.length > 0 ? (
-          <View
-            style={{
-              borderTopWidth: 1,
-              borderTopColor: c.divider,
-              backgroundColor: c.mode === 'dark' ? 'rgba(0,0,0,0.22)' : 'rgba(15,20,30,0.02)',
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              gap: 4,
-            }}
-          >
-            {result.details.map((d, i) => (
-              <Mono key={i} tone="muted" style={{ fontSize: 11.5, lineHeight: 17 }}>{d}</Mono>
-            ))}
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
 /** Informational readout for multi-output calculators (no pass/fail badge). */
 export function MetricReadout({ result, accent }: { result: MetricResult | null; accent?: string }) {
   const c = useColors();
@@ -850,4 +786,9 @@ export function MetricReadout({ result, accent }: { result: MetricResult | null;
       </View>
     </View>
   );
+}
+
+/** Lets short ScrollView content keep its actions above the tab bar. */
+export function FooterContentSpacer() {
+  return <View style={{ flex: 1 }} />;
 }

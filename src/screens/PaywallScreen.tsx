@@ -1,4 +1,4 @@
-import { type ComponentProps, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -18,10 +18,9 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
-import { SubscriptionService, type SubscriptionStorefront } from '../services/SubscriptionService';
+import { SubscriptionService, type PlanKey, type SubscriptionStorefront } from '../services/SubscriptionService';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
-type PlanKey = 'monthly' | 'yearly';
 
 type PlanViewModel = {
   key: PlanKey;
@@ -32,6 +31,7 @@ type PlanViewModel = {
   cadence: string;
   detail: string;
   cta: string;
+  available: boolean;
 };
 
 type AccessSection = {
@@ -48,7 +48,10 @@ type StoreStatus = {
 };
 
 const PRIVACY_POLICY_URL = 'https://basemapped.com/basecalc-hvac/privacy-policy';
-const TERMS_OF_USE_URL = 'https://basemapped.com/basecalc/terms-of-service';
+const TERMS_OF_USE_URL = Platform.select({
+  ios: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+  default: 'https://basemapped.com/basecalc-hvac/terms-of-service',
+});
 
 const FREE_ACCESS: AccessSection = {
   title: 'Free',
@@ -66,29 +69,24 @@ const PRO_ACCESS: AccessSection = {
   items: [
     'Duct sizing and filters',
     'Psychrometrics and mixed air',
-    'Refrigerant lines and charging',
-    'Room load, hydronics, economizer',
+    'Manufacturer-data refrigerant checks',
+    'Planning load, hydronics, outdoor airflow',
   ],
 };
 
 const PRO_FEATURES = [
   'Unlock every HVAC calculator in the app',
   'Keep the four most-used airflow and capacity checks free',
-  'Hide ads while Pro is active',
-  'Keep local job history, contacts, and worksheets available on device',
+  'Unlimited local job contacts and open worksheets',
+  'Keep local job history, contacts, and worksheets available in the app',
 ];
 
-const FALLBACK_PRICES: Record<PlanKey, string> = {
-  monthly: '$7',
-  yearly: '$50',
-};
-
-const PLAN_COPY: Record<PlanKey, Omit<PlanViewModel, 'price' | 'detail'>> = {
+const PLAN_COPY: Record<PlanKey, Omit<PlanViewModel, 'price' | 'detail' | 'available'>> = {
   yearly: {
     key: 'yearly',
     title: 'Yearly',
     badge: 'BEST VALUE',
-    subtitle: 'Built for regular field use',
+    subtitle: 'One year of complete Pro calculator access',
     cadence: '/yr',
     cta: 'Subscribe yearly',
   },
@@ -96,7 +94,7 @@ const PLAN_COPY: Record<PlanKey, Omit<PlanViewModel, 'price' | 'detail'>> = {
     key: 'monthly',
     title: 'Monthly',
     badge: 'FLEXIBLE',
-    subtitle: 'Use Pro when the work calls for it',
+    subtitle: 'One month of complete Pro calculator access',
     cadence: '/mo',
     cta: 'Subscribe monthly',
   },
@@ -150,10 +148,11 @@ function storeProductForPlan(storefront: SubscriptionStorefront | null, plan: Pl
 }
 
 function planDetail(plan: PlanKey, product: PurchasesStoreProduct | null): string {
+  if (!product) return 'Product not returned by the store';
   if (plan === 'yearly') {
     return product?.pricePerMonthString
       ? `${product.pricePerMonthString}/mo equivalent`
-      : '$4.17/mo equivalent';
+      : 'Billed yearly';
   }
   return 'Cancel anytime';
 }
@@ -164,13 +163,15 @@ function buildPlans(storefront: SubscriptionStorefront | null): Record<PlanKey, 
   return {
     yearly: {
       ...PLAN_COPY.yearly,
-      price: yearlyProduct?.priceString ?? FALLBACK_PRICES.yearly,
+      price: yearlyProduct?.priceString ?? 'Unavailable',
       detail: planDetail('yearly', yearlyProduct),
+      available: yearlyProduct !== null,
     },
     monthly: {
       ...PLAN_COPY.monthly,
-      price: monthlyProduct?.priceString ?? FALLBACK_PRICES.monthly,
+      price: monthlyProduct?.priceString ?? 'Unavailable',
       detail: planDetail('monthly', monthlyProduct),
+      available: monthlyProduct !== null,
     },
   };
 }
@@ -219,7 +220,7 @@ function PlanCard({
 }) {
   const c = useColors();
   return (
-    <Pressable onPress={onSelect} disabled={loading} style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}>
+    <Pressable onPress={onSelect} disabled={loading || !plan.available} style={({ pressed }) => ({ opacity: !plan.available ? 0.55 : pressed ? 0.82 : 1 })}>
       <Panel
         style={{
           borderColor: active ? c.amberBright : c.border,
@@ -230,7 +231,7 @@ function PlanCard({
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 }}>
               <MaterialIcons
-                name={active ? 'radio-button-checked' : 'radio-button-unchecked'}
+                name={active ? 'radio-button-checked' : plan.available ? 'radio-button-unchecked' : 'block'}
                 size={20}
                 color={active ? c.amberBright : c.textMuted}
               />
@@ -238,7 +239,7 @@ function PlanCard({
             </View>
             <Small tone="muted">{plan.subtitle}</Small>
           </View>
-          <Pill label={plan.badge} tone={active ? 'amber' : 'neutral'} />
+          <Pill label={plan.available ? plan.badge : 'UNAVAILABLE'} tone={active ? 'amber' : 'neutral'} />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 15 }}>
@@ -262,9 +263,13 @@ export function PaywallScreen() {
   const [storefront, setStorefront] = useState<SubscriptionStorefront | null>(null);
   const [offeringsChecked, setOfferingsChecked] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('yearly');
+  const operationInFlight = useRef(false);
   const purchasesEnabled = isRevenueCatConfigured();
   const storefrontReady = storefront ? SubscriptionService.isStorefrontReady(storefront) : false;
   const plans = useMemo(() => buildPlans(storefront), [storefront]);
+  const selectedPlanAvailable = storefront
+    ? SubscriptionService.isPlanAvailable(storefront, selectedPlan)
+    : false;
   const checkoutLoading = purchasesEnabled && !offeringsChecked;
   const storeStatus: StoreStatus = !purchasesEnabled
     ? { label: 'Store setup needed', tone: 'fail' }
@@ -305,6 +310,24 @@ export function PaywallScreen() {
     };
   }, [purchasesEnabled]);
 
+  useEffect(() => {
+    if (!storefront) return;
+    const availablePlan = SubscriptionService.selectAvailablePlan(storefront, selectedPlan);
+    if (availablePlan && availablePlan !== selectedPlan) setSelectedPlan(availablePlan);
+  }, [selectedPlan, storefront]);
+
+  const beginStoreOperation = () => {
+    if (operationInFlight.current) return false;
+    operationInFlight.current = true;
+    setLoading(true);
+    return true;
+  };
+
+  const endStoreOperation = () => {
+    operationInFlight.current = false;
+    setLoading(false);
+  };
+
   const closePaywall = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -319,11 +342,11 @@ export function PaywallScreen() {
       );
       return;
     }
-    if (!storefrontReady) {
-      Alert.alert('Store products unavailable', storeUnavailableMessage());
+    if (!storefront || !SubscriptionService.isPlanAvailable(storefront, selectedPlan)) {
+      Alert.alert('Selected plan unavailable', 'That plan was not returned by the store. Select an available plan or try again later.');
       return;
     }
-    setLoading(true);
+    if (!beginStoreOperation()) return;
     try {
       const success = await SubscriptionService.purchase(selectedPlan);
       if (success) {
@@ -334,7 +357,7 @@ export function PaywallScreen() {
     } catch (error) {
       Alert.alert('Purchase failed', errorMessage(error));
     } finally {
-      setLoading(false);
+      endStoreOperation();
     }
   };
 
@@ -347,7 +370,7 @@ export function PaywallScreen() {
       return;
     }
 
-    setLoading(true);
+    if (!beginStoreOperation()) return;
     try {
       const active = await SubscriptionService.restorePurchases();
       setPro(active);
@@ -360,7 +383,7 @@ export function PaywallScreen() {
     } catch (error) {
       Alert.alert('Restore failed', errorMessage(error));
     } finally {
-      setLoading(false);
+      endStoreOperation();
     }
   };
 
@@ -379,7 +402,7 @@ export function PaywallScreen() {
             </View>
             <Display style={{ textAlign: 'center' }}>Pro is active</Display>
             <Body tone="muted" style={{ textAlign: 'center', marginTop: 8, maxWidth: 320 }}>
-              Every HVAC calculator is unlocked. Ads stay hidden while the subscription is active.
+              Every HVAC calculator and the expanded local record limits are unlocked while the subscription is active.
             </Body>
           </View>
         </ScrollView>
@@ -415,19 +438,19 @@ export function PaywallScreen() {
         </View>
 
         <PrimaryButton
-          label={loading ? `Opening ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'}` : storefrontReady ? plans[selectedPlan].cta : 'Store products unavailable'}
+          label={loading ? `Opening ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'}` : selectedPlanAvailable ? plans[selectedPlan].cta : 'Selected plan unavailable'}
           icon="workspace-premium"
           loading={loading}
-          disabled={loading || !storefrontReady}
+          disabled={loading || !selectedPlanAvailable}
           onPress={purchase}
         />
 
         <View style={{ flexDirection: 'row', marginTop: 12 }}>
-          <SecondaryButton label="Restore purchases" icon="restore" onPress={restore} />
+          <SecondaryButton label="Restore purchases" icon="restore" disabled={loading} onPress={restore} />
         </View>
 
         <Small tone="muted" style={{ textAlign: 'center', marginTop: 18 }}>
-          Subscriptions auto-renew until cancelled. Manage or cancel from your App Store or Google Play account settings.
+          Monthly provides one month and yearly provides one year of BaseCalc HVAC Pro access. Payment is charged to your store account. Subscriptions auto-renew unless cancelled at least 24 hours before the current period ends. Manage or cancel in your App Store or Google Play account settings.
         </Small>
 
         <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 8, marginTop: 10 }}>

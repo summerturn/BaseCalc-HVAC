@@ -2,6 +2,7 @@ import { Invoice, InvoiceLineItem, CompanySettings } from '../store/useAppStore'
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 
 // ─── Job Worksheet HTML Generator ────────────────────────────────────
 
@@ -128,6 +129,7 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
 
 export const InvoiceService = {
   async generatePDF(invoice: Invoice, company: CompanySettings, clientName: string): Promise<string | null> {
+    let temporaryFile: File | null = null;
     try {
       const html = generateInvoiceHTML(invoice, company, clientName);
 
@@ -145,10 +147,32 @@ export const InvoiceService = {
 
       // Use Expo Print (works in Expo dev-client / bare workflow)
       const { uri } = await Print.printToFileAsync({ html });
-      return uri || null;
+      if (!uri) return null;
+      temporaryFile = new File(uri);
+      const safeId = invoice.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const destination = new File(Paths.document, `basecalc-hvac-worksheet-${safeId}.pdf`);
+      await temporaryFile.move(destination, { overwrite: true });
+      return destination.uri;
     } catch (error) {
       console.error('PDF generation failed:', error);
+      try {
+        if (temporaryFile?.exists) temporaryFile.delete();
+      } catch {
+        // The operating system may already have removed the temporary print file.
+      }
       return null;
+    }
+  },
+
+  deletePDF(filePath: string | null | undefined): boolean {
+    if (!filePath) return true;
+    try {
+      const file = new File(filePath);
+      if (file.exists) file.delete();
+      return true;
+    } catch (error) {
+      console.error('PDF deletion failed:', error);
+      return false;
     }
   },
 

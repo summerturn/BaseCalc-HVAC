@@ -10,21 +10,21 @@ Field-ready HVAC calculators and job records for technicians, installers, and se
 - **BTU from CFM** — load from airflow and temperature difference
 - **Duct Sizing** — round and rectangular duct from CFM and velocity
 - **Air Velocity** — velocity from CFM and cross-sectional area
-- **Psychrometrics** — total, sensible, and latent BTU/hr estimates
-- **Refrigerant Lines** — suction and liquid line size recommendations
-- **Superheat / Subcooling** — target superheat and subcooling guides
-- **Room Load** — quick cooling/heating load estimate
-- **Heat Pump Balance** — balance point between capacity and heat loss
+- **Psychrometrics** — total, sensible, and latent BTU/hr estimates at standard atmospheric pressure
+- **Refrigerant Lines** — validate entered manufacturer line data against an equivalent-length limit
+- **Superheat / Subcooling** — record the exact manufacturer target
+- **Room Load** — user-supplied area-factor planning math; not Manual J
+- **Heat Pump Balance** — bracketed interpolation from supplied manufacturer capacity points
 - **Hydronics** — BTU, GPM, and ΔT relationships
 - **Mixed Air** — mixed-air temperature from OA and RA
 - **Air Changes** — ACH from CFM and room volume
-- **Evaporative Cooling** — supply temperature and tonnage estimate
-- **Filter Velocity** — face velocity and pressure drop
-- **Combustion Analysis** — excess air from O2 or CO2 readings
-- **Refrigerant Weight** — line-set charge estimate in oz/lb
-- **Economizer** — minimum outdoor air CFM per ASHRAE 62.1 concepts
+- **Evaporative Cooling** — supply temperature and sensible air-side estimate
+- **Filter Velocity** — face velocity, with manufacturer data required for pressure drop
+- **O₂ Excess Air** — theoretical dry-flue-gas dilution estimate; not a safety result
+- **Refrigerant Weight** — additional charge from entered manufacturer allowance and rate
+- **Outdoor Airflow** — breathing-zone airflow from user-supplied rates
 
-Every result shows a clear readout, the governing limit where applicable, and a full breakdown.
+Every supported result shows a clear readout, explicit assumptions, and a calculation breakdown. Equipment-specific calculators fail closed when required manufacturer data is absent.
 
 **Field workflow**
 - Job contacts for field-ticket context
@@ -43,7 +43,7 @@ Expo SDK 56 · React Native 0.85 · TypeScript · React Navigation · Zustand (p
 ```bash
 npm install
 npm run ios        # build & run on the iOS simulator (requires prebuild or native dirs)
-npm test           # Jest unit tests (calculation engine)
+npm test           # Jest unit tests (calculations, access, and purchases)
 npx tsc --noEmit   # type-check
 ```
 
@@ -59,7 +59,7 @@ src/components/           # Type.tsx (typography), ui.tsx (instrument UI kit)
 src/theme/                # color tokens, typography, theme provider
 src/store/                # Zustand store (job contacts, field tickets, calculations)
 src/services/             # field-ticket PDF export, analytics
-__tests__/                # HAVACEngine tests
+__tests__/                # golden-vector, access-policy, store, and purchase tests
 ```
 
 ## Release setup

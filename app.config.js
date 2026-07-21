@@ -1,7 +1,7 @@
 const baseExpoConfig = {
   name: 'BaseCalc HVAC',
   slug: 'basecalc-hvac',
-  newArchEnabled: false,
+  newArchEnabled: true,
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -19,6 +19,12 @@ const baseExpoConfig = {
   },
   android: {
     package: 'com.basemapped.basecalchvac',
+    allowBackup: false,
+    blockedPermissions: [
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+    ],
     adaptiveIcon: {
       backgroundColor: '#0A0C11',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -41,6 +47,7 @@ const baseExpoConfig = {
     ],
     'expo-font',
     'expo-sharing',
+    './plugins/withAndroidLaunchMode',
   ],
   owner: 'basemapped-llc',
   extra: {

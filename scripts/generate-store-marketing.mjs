@@ -34,13 +34,15 @@ const render = (html, w, h, outPath) => {
 };
 
 // ── A phone, freely positioned / scaled / rotated ───────────────────────
-function phone({ body, active, left, top, w, rot = 0, z = 1 }) {
+function phone({ body, active, left, top, w, rot = 0, z = 1, platform = 'ios' }) {
   const baseW = 936, baseH = 1986, bezel = 18;
   const k = w / baseW;
   const h = baseH * k, bz = bezel * k, r = 92 * k;
   const sw = (baseW - bezel * 2) * k, sh = (baseH - bezel * 2) * k, scr = 74 * k;
   const scale = sw / IW, ih = sh / scale;
-  const island = `<div style="position:absolute;top:${(bezel + 22) * k}px;left:50%;transform:translateX(-50%);width:${250 * k}px;height:${64 * k}px;border-radius:${32 * k}px;background:#000;z-index:5"></div>`;
+  const camera = platform === 'android'
+    ? `<div style="position:absolute;top:${(bezel + 20) * k}px;left:50%;transform:translateX(-50%);width:${32 * k}px;height:${32 * k}px;border-radius:50%;background:#05070B;z-index:5"></div>`
+    : `<div style="position:absolute;top:${(bezel + 22) * k}px;left:50%;transform:translateX(-50%);width:${250 * k}px;height:${64 * k}px;border-radius:${32 * k}px;background:#000;z-index:5"></div>`;
   const inner = `<div style="position:absolute;inset:0;background:radial-gradient(120% 60% at 50% -8%, ${rgba(T.amberB, 0.13)}, rgba(0,0,0,0) 60%),linear-gradient(180deg,#0b0e15,${T.bg})"></div>
     <div style="position:absolute;inset:0;opacity:.5;background-image:linear-gradient(${rgba('#ffffff', .028)} 1px,transparent 1px),linear-gradient(90deg,${rgba('#ffffff', .028)} 1px,transparent 1px);background-size:34px 34px"></div>
     <div style="position:relative;height:100%">${statusBar()}<div style="position:relative">${body}</div>${tabBar(active)}</div>`;
@@ -48,7 +50,7 @@ function phone({ body, active, left, top, w, rot = 0, z = 1 }) {
     <div style="position:absolute;inset:0;border-radius:${r}px;background:linear-gradient(160deg,#20262F,#0E1219 55%,#05070B);box-shadow:0 70px 110px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.10)"></div>
     <div style="position:absolute;left:${bz}px;top:${bz}px;width:${sw}px;height:${sh}px;border-radius:${scr}px;overflow:hidden;background:${T.bg}">
       <div style="position:absolute;top:0;left:0;width:${IW}px;height:${ih}px;transform:scale(${scale});transform-origin:top left">${inner}</div>
-    </div>${island}
+    </div>${camera}
   </div>`;
 }
 
@@ -87,8 +89,8 @@ function backdrop({ totalW, H, viewX, viewW, midY, amp, glowsAt, glowY }) {
 // ── Panorama frames ─────────────────────────────────────────────────────
 const PANELS = [
   { body: dashboard, active: 'calc', l1: 'Run the math.', l2: 'In the field.', sub: 'HVAC calculators built for the trade.' },
-  { body: ductSizing, active: 'calc', l1: 'Size ducts', l2: 'to spec.', sub: 'Round and rectangular from CFM and velocity.' },
-  { body: filterVelocity, active: 'calc', l1: 'Pass or fail,', l2: 'instantly.', sub: 'Filter face velocity with a clear target check.' },
+  { body: ductSizing, active: 'calc', l1: 'Calculate duct', l2: 'dimensions.', sub: 'Round and rectangular results from entered CFM and velocity.' },
+  { body: filterVelocity, active: 'calc', l1: 'Check filter', l2: 'velocity.', sub: 'Calculate face velocity and compare it with an entered target.' },
   { body: psychrometrics, active: 'calc', l1: 'Total, sensible,', l2: 'latent.', sub: 'Psychrometric loads in one readout.' },
   { body: history, active: 'his', l1: 'Keep the', l2: 'job record.', sub: 'Local calculation history, always offline.' },
 ];
@@ -124,6 +126,31 @@ async function panorama() {
   console.log('  ✓ 00-stitched-preview.png (full strip)');
 }
 
+async function googlePanorama() {
+  const W = 1080, H = 1920, N = PANELS.length, totalW = W * N;
+  const phoneW = 680, phoneTop = 470;
+  const glowsAt = PANELS.map((_, i) => i * W + W / 2);
+  const outDir = join(ROOT, 'store-assets', 'google-play', 'panorama');
+  mkdirSync(outDir, { recursive: true });
+  console.log(`\nGoogle Play panorama (${N}× ${W}×${H}) → store-assets/google-play/panorama/`);
+  for (let i = 0; i < N; i++) {
+    const p = PANELS[i];
+    const bg = backdrop({ totalW, H, viewX: i * W, viewW: W, midY: 280, amp: 72, glowsAt, glowY: H * 0.14 });
+    const head = `<div style="position:absolute;top:82px;left:48px;width:${W - 96}px;text-align:center;z-index:9">
+      <div style="font-family:${DISP};font-weight:900;font-size:60px;line-height:66px"><span style="color:${T.text}">${p.l1}</span> <span style="color:${T.amberB}">${p.l2}</span></div>
+      <div style="font-family:${BODY};font-weight:500;font-size:27px;color:${T.muted};margin-top:12px">${p.sub}</div>
+    </div>`;
+    const ph = phone({ body: p.body(), active: p.active, left: (W - phoneW) / 2, top: phoneTop, w: phoneW, z: 4, platform: 'android' });
+    const html = `<!doctype html><html><head><meta charset="utf-8"><style>${FONTCSS}
+*{margin:0;padding:0;box-sizing:border-box}html,body{width:${W}px;height:${H}px;overflow:hidden}
+.page{position:relative;width:${W}px;height:${H}px;font-family:${BODY}}
+.vign{position:absolute;inset:0;background:radial-gradient(95% 80% at 50% 60%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.34) 100%);z-index:6}
+</style></head><body><div class="page">${bg}${head}${ph}<div class="vign"></div></div></body></html>`;
+    await render(html, W, H, join(outDir, `${String(i + 1).padStart(2, '0')}-panorama.png`));
+    console.log(`  ✓ ${String(i + 1).padStart(2, '0')}-panorama.png`);
+  }
+}
+
 // ── Hero ────────────────────────────────────────────────────────────────
 async function hero() {
   const W = 2400, H = 1500;
@@ -136,7 +163,7 @@ async function hero() {
       <img src="file://${ICON}" style="width:118px;height:118px;border-radius:30px;box-shadow:0 18px 40px rgba(0,0,0,0.5)"/>
       <div style="font-family:${DISP};font-weight:900;font-size:104px;line-height:104px;letter-spacing:-1px"><span style="color:${T.text}">BASE</span><span style="color:${T.amberB}">CALC</span> <span style="color:${T.muted};font-size:60px;letter-spacing:6px">HVAC</span></div>
     </div>
-    <div style="font-family:${BODY};font-weight:500;font-size:42px;color:${T.dim};margin-top:24px">Load, airflow, duct, and refrigerant math that pass or fail on the spot — built for HVAC techs.</div>
+    <div style="font-family:${BODY};font-weight:500;font-size:42px;color:${T.dim};margin-top:24px">BTU, airflow, duct, and manufacturer-data checks for HVAC field work.</div>
   </div>`;
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>${FONTCSS}
 *{margin:0;padding:0;box-sizing:border-box}html,body{width:${W}px;height:${H}px;overflow:hidden}
@@ -146,11 +173,21 @@ async function hero() {
   const outDir = join(ROOT, 'store-assets', 'hero');
   mkdirSync(outDir, { recursive: true });
   console.log(`\nhero (${W}×${H}) → store-assets/hero/`);
-  await render(html, W, H, join(outDir, 'hero.png'));
+  const heroPath = join(outDir, 'hero.png');
+  await render(html, W, H, heroPath);
   console.log('  ✓ hero.png');
+  const featureDir = join(ROOT, 'store-assets', 'google-play');
+  mkdirSync(featureDir, { recursive: true });
+  await sharp(heroPath)
+    .resize({ width: 1024 })
+    .extract({ left: 0, top: 0, width: 1024, height: 500 })
+    .png()
+    .toFile(join(featureDir, 'feature-graphic.png'));
+  console.log('  ✓ google-play/feature-graphic.png');
 }
 
 const mode = process.argv[2];
 if (!mode || mode === 'panorama') await panorama();
+if (!mode || mode === 'google-panorama') await googlePanorama();
 if (!mode || mode === 'hero') await hero();
 console.log('\nDone.');

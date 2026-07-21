@@ -85,12 +85,10 @@ const mi = (name, size, color) => `<span style="font-family:'MI';font-size:${siz
 
 // ── Shared screen pieces ────────────────────────────────────────────────
 function statusBar() {
-  return `<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px">
-    <div style="font-family:${DISP};font-weight:700;font-size:17px;color:${T.text};letter-spacing:.3px">9:41</div>
-    <div style="display:flex;align-items:center;gap:7px">
-      ${mi('signal_cellular_alt', 17, T.text)}${mi('wifi', 17, T.text)}${mi('battery_full', 19, T.text)}
-    </div>
-  </div>`;
+  // Preserve the safe-area spacing without drawing platform status icons into
+  // store artwork. App Review treats Android-style glyphs in iOS screenshots as
+  // inaccurate metadata.
+  return '<div aria-hidden="true" style="height:54px"></div>';
 }
 const TABS = [
   { ic: 'ac_unit', label: 'Calculators', key: 'calc' },
@@ -183,8 +181,8 @@ const CALCS = [
   { t: 'CFM from BTU', s: 'Airflow from load', ic: 'air', code: 'Q = BTU ÷ (1.08 × ΔT)', col: CAT.airflow },
   { t: 'Duct Sizing', s: 'Round & rectangular', ic: 'line_weight', code: 'Area = CFM ÷ V', col: CAT.duct },
   { t: 'Psychrometrics', s: 'Total / sensible / latent', ic: 'water_drop', code: '4.5 × CFM × Δh', col: CAT.psychrometrics },
-  { t: 'Refrigerant Lines', s: 'Suction & liquid sizes', ic: 'linear_scale', code: 'Line sizing', col: CAT.refrigerant },
-  { t: 'Superheat / Subcool', s: 'Charging targets', ic: 'device_thermostat', code: 'SH / SC target', col: CAT.refrigerant },
+  { t: 'Refrigerant Lines', s: 'Manufacturer data check', ic: 'linear_scale', code: 'Equivalent length check', col: CAT.refrigerant },
+  { t: 'Superheat / Subcool', s: 'Manufacturer target', ic: 'device_thermostat', code: 'Record target', col: CAT.refrigerant },
   { t: 'Hydronics', s: 'BTU · GPM · ΔT', ic: 'water', code: 'Q = 500 × GPM × ΔT', col: CAT.hydronics },
   { t: 'Air Changes', s: 'ACH from CFM', ic: 'cached', code: 'ACH = CFM × 60 ÷ V', col: CAT.airflow },
 ];
@@ -204,7 +202,7 @@ function dashboard() {
   return `<div style="padding:8px 22px 0">
     <div style="margin-top:6px;margin-bottom:26px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="background:${T.amberSoft};border:1px solid ${rgba(T.amberB, .4)};border-radius:999px;padding:5px 11px">${label('HVAC · Field Ready', T.amber, 0)}</div>
+        <div style="background:${T.amberSoft};border:1px solid ${rgba(T.amberB, .4)};border-radius:999px;padding:5px 11px">${label('HVAC · Field Toolkit', T.amber, 0)}</div>
         <div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:7px;background:${T.pass};box-shadow:0 0 5px ${T.pass}"></div><span style="font-family:${MONO};font-weight:500;font-size:11px;color:${T.muted}">LIVE</span></div>
       </div>
       <div style="display:flex;align-items:center;gap:14px">
@@ -214,7 +212,7 @@ function dashboard() {
           <div style="font-family:${BODY};font-weight:700;font-size:14px;line-height:20px;letter-spacing:1.8px;text-transform:uppercase;color:${T.muted};margin-top:2px">HVAC</div>
         </div>
       </div>
-      <div style="font-family:${BODY};font-weight:500;font-size:16px;line-height:24px;color:${T.muted};margin-top:10px">HVAC field math for loads, airflow, duct, refrigerant, and hydronics.</div>
+      <div style="font-family:${BODY};font-weight:500;font-size:16px;line-height:24px;color:${T.muted};margin-top:10px">HVAC field math with explicit inputs, assumptions, and equipment-data boundaries.</div>
     </div>
     ${rows}
   </div>`;
@@ -270,7 +268,7 @@ function jobs() {
 }
 function materials() {
   const groups = [
-    { t: 'Refrigerant + Lineset', s: 'Match to tonnage after line sizing.', ic: 'linear_scale', col: CAT.refrigerant, items: ['Line set by tonnage and length', 'Brazing rod and nitrogen', 'Filter drier and service caps'] },
+    { t: 'Refrigerant + Lineset', s: 'Match the exact equipment submittal.', ic: 'linear_scale', col: CAT.refrigerant, items: ['Manufacturer-specified line set', 'Brazing rod and nitrogen', 'Filter drier and service caps'] },
     { t: 'Air Distribution', s: 'Plan duct after the CFM math.', ic: 'air', col: CAT.airflow, items: ['Duct and fittings by CFM', 'Registers, grilles, and boots', 'Flex, mastic, and straps'] },
     { t: 'Equipment + Controls', s: 'Stage the change-out parts.', ic: 'device_thermostat', col: CAT.load, items: ['Condenser and air handler', 'Thermostat and control wire', 'Pads, whips, and disconnects'] },
   ];
@@ -327,25 +325,25 @@ function worksheetDetail() {
 }
 
 function superheatSubcool() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Superheat / Subcool', 'Charging targets')}
-    ${panel(`${field('Refrigerant', 'R-410A')}${field('Metering device', 'TXV')}${field('Outdoor temp', '95', '°F')}${field('Indoor wet bulb', '63', '°F')}${solveBtn('Find target')}`)}
-    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Target subcool', value: '10.0', unit: '°F' }, { label: 'Refrigerant', value: 'R-410A' }], secondary: [{ label: 'Metering device', value: 'TXV' }, { label: 'Outdoor / indoor WB', value: '95°F / 63°F' }] })}
+  return `<div style="padding:6px 20px 0">${calcHeader('Superheat / Subcool', 'Record the equipment manufacturer target')}
+    ${panel(`${field('Mode', 'Subcool')}${field('Refrigerant', 'R-410A')}${field('Manufacturer target', '10.0', '°F')}${solveBtn('Validate')}`)}
+    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Subcooling target', value: '10.0', unit: '°F' }, { label: 'Refrigerant', value: 'R-410A' }], secondary: [{ label: 'Source', value: 'Manufacturer data' }] })}
   </div>`;
 }
 
 function refrigerantLines() {
-  return `<div style="padding:6px 20px 0">${calcHeader('Refrigerant Lines', 'Suction & liquid sizing')}
-    ${panel(`${field('Refrigerant', 'R-410A')}${field('Capacity', '3.0', 'tons')}${field('Line length', '25', 'ft')}${field('Lift', '10', 'ft')}${solveBtn('Size lines')}`)}
-    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Suction', value: '7/8', unit: 'in' }, { label: 'Liquid', value: '3/8', unit: 'in' }], secondary: [{ label: 'System', value: 'R-410A · 3.0 tons' }, { label: 'Line length', value: '25 ft' }] })}
+  return `<div style="padding:6px 20px 0">${calcHeader('Refrigerant Lines', 'Manufacturer equivalent-length check')}
+    ${panel(`${field('Equivalent line length', '80', 'ft')}${field('Manufacturer maximum', '100', 'ft')}${field('Manufacturer suction size', '7/8', 'in')}${field('Manufacturer liquid size', '3/8', 'in')}${solveBtn('Validate')}`)}
+    ${metricReadout({ tint: CAT.refrigerant, primary: [{ label: 'Suction', value: '7/8', unit: 'in' }, { label: 'Liquid', value: '3/8', unit: 'in' }], secondary: [{ label: 'Equivalent length', value: '80 ft' }, { label: 'Length margin', value: '20 ft' }] })}
   </div>`;
 }
 
 function history() {
   const rows = [
     ['Duct Sizing', '14" round · 1.11 ft²', CAT.duct],
-    ['Filter Velocity', '250 FPM · PASS', CAT.airflow],
-    ['Psychrometrics', 'SHR 0.60 · 36,000 BTU/hr', CAT.psychrometrics],
-    ['Superheat / Subcool', 'Target SC 10.0°F', CAT.refrigerant],
+    ['Filter Velocity', '432 FPM face velocity', CAT.airflow],
+    ['Psychrometrics', '28,457 BTU/hr total', CAT.psychrometrics],
+    ['Superheat / Subcool', 'Manufacturer target 10.0°F', CAT.refrigerant],
   ].map(([title, result, color]) => `<div style="margin-bottom:12px">${panel(`
     <div style="display:flex;align-items:center;gap:13px">
       ${iconTile('calculate', color, 44)}
@@ -401,14 +399,14 @@ html,body{width:${D.W}px;height:${D.H}px;overflow:hidden}
 // ── Render ──────────────────────────────────────────────────────────────
 const SHOTS = [
   { out: '01-dashboard.png', body: dashboard, active: 'calc', line1: 'Run the math.', line2: 'In the field.', sub: 'HVAC calculators built for the trade.' },
-  { out: '02-duct-sizing.png', body: ductSizing, active: 'calc', line1: 'Size ducts', line2: 'to spec.', sub: 'Round and rectangular from CFM and velocity.' },
-  { out: '03-filter-velocity.png', body: filterVelocity, active: 'calc', line1: 'Pass or fail,', line2: 'instantly.', sub: 'Filter face velocity with a clear target check.' },
+  { out: '02-duct-sizing.png', body: ductSizing, active: 'calc', line1: 'Calculate duct', line2: 'dimensions.', sub: 'Round and rectangular results from entered CFM and velocity.' },
+  { out: '03-filter-velocity.png', body: filterVelocity, active: 'calc', line1: 'Check filter', line2: 'velocity.', sub: 'Calculate face velocity and compare it with an entered target.' },
   { out: '04-psychrometrics.png', body: psychrometrics, active: 'calc', line1: 'Total, sensible,', line2: 'latent.', sub: 'Psychrometric loads in one readout.' },
   { out: '05-jobs.png', body: jobs, active: 'jobs', line1: 'Save job', line2: 'worksheets.', sub: 'Scope, quantities, and notes stay in BaseCalc.' },
   { out: '06-worksheet.png', body: worksheetDetail, active: 'jobs', line1: 'Handoff without', line2: 'invoicing.', sub: 'Send final billing work to SpeakSheet.' },
   { out: '07-materials.png', body: materials, active: 'mat', line1: 'Plan the', line2: 'truck stock.', sub: 'Material reminders before the install.' },
-  { out: '08-superheat.png', body: superheatSubcool, active: 'calc', line1: 'Charge it', line2: 'right.', sub: 'Superheat and subcool targets on the spot.' },
-  { out: '09-refrigerant-lines.png', body: refrigerantLines, active: 'calc', line1: 'Size the', line2: 'lineset.', sub: 'Suction and liquid lines by tonnage and run.' },
+  { out: '08-superheat.png', body: superheatSubcool, active: 'calc', line1: 'Use the exact', line2: 'target.', sub: 'Record manufacturer charging data without guessed constants.' },
+  { out: '09-refrigerant-lines.png', body: refrigerantLines, active: 'calc', line1: 'Check the', line2: 'lineset.', sub: 'Validate entered equipment data against equivalent length.' },
   { out: '10-history.png', body: history, active: 'his', line1: 'Keep the', line2: 'job record.', sub: 'Local calculation history for the field.' },
 ];
 

@@ -10,8 +10,12 @@ import Purchases, {
 } from 'react-native-purchases';
 import { CONFIG, isRevenueCatConfigured, SUBSCRIPTION_ENTITLEMENT_ID, SUBSCRIPTION_TIERS } from '../lib/config';
 
-type PlanKey = 'monthly' | 'yearly';
+export type PlanKey = 'monthly' | 'yearly';
 type PlanMap<T> = Record<PlanKey, T>;
+
+export type SubscriptionStatusOptions = {
+  forceRefresh?: boolean;
+};
 
 export type SubscriptionStorefront = {
   offering: PurchasesOffering | null;
@@ -55,8 +59,7 @@ function packageForPlan(offering: PurchasesOffering | null | undefined, plan: Pl
   if (!offering) return null;
   const identifier = productIdentifierForPlan(plan);
   const matchingPackage = offering.availablePackages.find((pkg) => productMatchesPlan(pkg.product.identifier, identifier));
-  if (matchingPackage) return matchingPackage;
-  return (plan === 'monthly' ? offering.monthly : offering.annual) ?? null;
+  return matchingPackage ?? null;
 }
 
 function emptyPlanMap<T>(value: T): PlanMap<T> {
@@ -75,9 +78,21 @@ function productsForPlans(products: PurchasesStoreProduct[]): PlanMap<PurchasesS
 
 function storefrontReady(storefront: SubscriptionStorefront): boolean {
   return Boolean(
-    (storefront.packages.monthly ?? storefront.products.monthly) &&
-      (storefront.packages.yearly ?? storefront.products.yearly)
+    storefront.packages.monthly ??
+      storefront.products.monthly ??
+      storefront.packages.yearly ??
+      storefront.products.yearly
   );
+}
+
+function planAvailable(storefront: SubscriptionStorefront, plan: PlanKey): boolean {
+  return Boolean(storefront.packages[plan] ?? storefront.products[plan]);
+}
+
+function selectablePlan(storefront: SubscriptionStorefront, preferredPlan: PlanKey): PlanKey | null {
+  if (planAvailable(storefront, preferredPlan)) return preferredPlan;
+  const fallbackPlan: PlanKey = preferredPlan === 'yearly' ? 'monthly' : 'yearly';
+  return planAvailable(storefront, fallbackPlan) ? fallbackPlan : null;
 }
 
 function hasProEntitlement(customerInfo: CustomerInfo): boolean {
@@ -85,12 +100,28 @@ function hasProEntitlement(customerInfo: CustomerInfo): boolean {
 }
 
 function currentOffering(offerings: PurchasesOfferings): PurchasesOffering | null {
-  return offerings.current ?? offerings.all.default ?? Object.values(offerings.all)[0] ?? null;
+  const candidates = [
+    offerings.current,
+    offerings.all.default,
+    ...Object.values(offerings.all),
+  ].filter((offering): offering is PurchasesOffering => offering !== null && offering !== undefined);
+  return candidates.find((offering) => offering.availablePackages.some((pkg) =>
+    productMatchesPlan(pkg.product.identifier, SUBSCRIPTION_TIERS.monthly) ||
+    productMatchesPlan(pkg.product.identifier, SUBSCRIPTION_TIERS.yearly)
+  )) ?? null;
 }
 
 export const SubscriptionService = {
   isStorefrontReady(storefront: SubscriptionStorefront): boolean {
     return storefrontReady(storefront);
+  },
+
+  isPlanAvailable(storefront: SubscriptionStorefront, plan: PlanKey): boolean {
+    return planAvailable(storefront, plan);
+  },
+
+  selectAvailablePlan(storefront: SubscriptionStorefront, preferredPlan: PlanKey): PlanKey | null {
+    return selectablePlan(storefront, preferredPlan);
   },
 
   async getOfferings(): Promise<PurchasesOffering | null> {
@@ -150,7 +181,10 @@ export const SubscriptionService = {
 
       if (packageToBuy) {
         const purchaseResult = await Purchases.purchasePackage(packageToBuy);
-        return this.checkProEntitlement(purchaseResult.customerInfo);
+        if (!this.checkProEntitlement(purchaseResult.customerInfo)) {
+          throw new Error('The store completed the purchase, but Pro access is still syncing. Tap Restore purchases; if it remains locked, contact support with the store receipt.');
+        }
+        return true;
       }
 
       const productToBuy = storefront.products[plan];
@@ -159,7 +193,10 @@ export const SubscriptionService = {
       }
 
       const purchaseResult = await Purchases.purchaseStoreProduct(productToBuy);
-      return this.checkProEntitlement(purchaseResult.customerInfo);
+      if (!this.checkProEntitlement(purchaseResult.customerInfo)) {
+        throw new Error('The store completed the purchase, but Pro access is still syncing. Tap Restore purchases; if it remains locked, contact support with the store receipt.');
+      }
+      return true;
     } catch (error: unknown) {
       if (isPurchaseCancelled(error)) {
         return false;
@@ -174,14 +211,28 @@ export const SubscriptionService = {
     return this.checkProEntitlement(customerInfo);
   },
 
-  async checkStatus(): Promise<boolean> {
+  async checkStatus(options: SubscriptionStatusOptions = {}): Promise<boolean> {
     await initPurchases();
+    if (options.forceRefresh) {
+      await Purchases.invalidateCustomerInfoCache();
+    }
     const customerInfo = await Purchases.getCustomerInfo();
     return this.checkProEntitlement(customerInfo);
   },
 
   checkProEntitlement(customerInfo: CustomerInfo): boolean {
     return hasProEntitlement(customerInfo);
+  },
+
+  async subscribeToStatus(listener: (isPro: boolean) => void): Promise<() => void> {
+    await initPurchases();
+    const customerInfoListener = (customerInfo: CustomerInfo) => {
+      listener(hasProEntitlement(customerInfo));
+    };
+    Purchases.addCustomerInfoUpdateListener(customerInfoListener);
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(customerInfoListener);
+    };
   },
 
   setUserId(userId: string) {

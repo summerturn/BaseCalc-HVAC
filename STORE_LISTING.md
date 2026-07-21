@@ -1,6 +1,6 @@
 # BaseCalc HVAC Calculator — Store Listing Copy
 
-Source of truth for App Store Connect and Google Play listing text. Values mirror `store.config.json` where supported. Last optimized for ASO: 2026-07-06.
+Source of truth for App Store Connect and Google Play listing text. Values mirror `store.config.json` where supported. Last reconciled to source behavior: 2026-07-20.
 
 ## Positioning
 
@@ -18,7 +18,7 @@ Source of truth for App Store Connect and Google Play listing text. Values mirro
 | **Title** | `BaseCalc HVAC Calculator` | 24 / 30 |
 | **Subtitle** | `BTU CFM Duct Calculator` | 23 / 30 |
 | **Keywords** | `hvac,calculator,BTU,CFM,duct,sizing,airflow,refrigerant,superheat,subcooling,load,psychrometric` | 95 / 100 |
-| **Promotional Text** | `HVAC calculator for field math: BTU, CFM, duct sizing, refrigerant, superheat, subcooling, saved history, worksheets, and materials.` | 132 / 170 |
+| **Promotional Text** | `HVAC field math for BTU, CFM, duct sizing, psychrometrics, manufacturer-data checks, saved history, worksheets, and materials.` | 130 / 170 |
 
 **Description**
 
@@ -32,22 +32,22 @@ BaseCalc HVAC Calculator is an HVAC calculator for field math, worksheets, mater
 • Duct Sizing — round and rectangular duct from CFM and velocity.
 • Air Velocity — velocity from CFM and cross-sectional area.
 • Psychrometrics — total, sensible, and latent BTU/hr estimates.
-• Refrigerant Lines — suction and liquid line size recommendations.
-• Superheat / Subcooling — target superheat and subcooling guides.
-• Room Load — quick cooling/heating load estimate.
-• Heat Pump Balance — balance point between capacity and heat loss.
+• Refrigerant Lines — check entered manufacturer line data against an entered equivalent-length limit.
+• Superheat / Subcooling — record the exact target supplied by the equipment manufacturer.
+• Room Load — preliminary area-factor planning math using your supplied factor; not Manual J.
+• Heat Pump Balance — interpolate a bracketed balance point from entered manufacturer capacity data.
 • Hydronics — BTU, GPM, and ΔT relationships.
 • Mixed Air — mixed-air temperature from outdoor and return air.
 • Air Changes — ACH from CFM and room volume.
-• Evaporative Cooling — supply temperature and tonnage estimate.
-• Filter Velocity — face velocity and pressure drop estimate.
-• Combustion Analysis — excess air from O2 or CO2 readings.
-• Refrigerant Weight — line-set charge estimate in ounces and pounds.
-• Economizer — minimum outdoor air CFM per ASHRAE 62.1 concepts.
+• Evaporative Cooling — supply temperature and sensible air-side estimate.
+• Filter Velocity — filter face velocity; use manufacturer data for pressure drop.
+• O₂ Excess Air — theoretical dry-flue-gas dilution estimate from measured O₂; not a safety result.
+• Refrigerant Weight — additional charge from an entered manufacturer allowance and rate.
+• Outdoor Airflow — breathing-zone airflow arithmetic from user-supplied per-person and per-area rates.
 
 EVERY RESULT IS EXPLAINED
-• Clear sizing messages and pass/fail where applicable.
-• The governing limit, final answer, and calculation breakdown.
+• Explicit input validation, assumptions, and calculation boundaries.
+• Final arithmetic and a calculation breakdown where the supplied data supports one.
 • Saved local history so you keep a job-site record.
 
 JOB RECORDS, MATERIALS, AND WORKSHEETS
@@ -60,8 +60,9 @@ JOB RECORDS, MATERIALS, AND WORKSHEETS
 DEVICE-LOCAL FOR THE FIELD
 • Works offline by default.
 • No BaseCalc account or cloud sync.
-• Job contact, worksheet, setting, and calculation data stays on this device, protected by your device security.
-• There is no BaseCalc cloud option.
+• Job contacts, worksheets, settings, and calculation history use the app's local storage.
+• Subscription status is checked through RevenueCat; exports leave the app only when you choose to share them.
+• No third-party advertising SDK or third-party ads in this release.
 • Dark and light themes with a high-contrast job-site interface.
 
 BaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.
@@ -84,13 +85,14 @@ Initial release of BaseCalc HVAC Calculator with 18 HVAC field calculators, save
 ## Launch Declarations
 
 - Privacy policy URL: `https://basemapped.com/basecalc-hvac/privacy-policy`
+- Apple standard Terms of Use (EULA): `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`
 - Support URL: `https://basemapped.com/basecalc-hvac/support`
 - Marketing URL: `https://basemapped.com/products/basecalc-hvac`
 - Copyright: `2026 BaseMapped LLC`
 - Age rating: 4+.
-- BaseCalc HVAC is device-local by design: no BaseCalc account, cloud sync, or cloud database.
-- If RevenueCat is enabled in the submitted build, disclose purchases.
-- If AdMob is enabled in the submitted build, disclose advertising identifiers/data use according to the live ad configuration.
+- BaseCalc HVAC stores user-entered job data in app-local storage and does not provide a BaseCalc account or BaseCalc cloud sync.
+- Disclose app-store purchase and entitlement processing through RevenueCat.
+- This source does not include an advertising SDK or display third-party ads.
 
 ## Screenshots
 

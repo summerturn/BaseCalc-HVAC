@@ -7,6 +7,7 @@ import { Body, H2, Label, Mono } from '../components/Type';
 import {
   ACTION_RAIL_WIDTH,
   EmptyState,
+  FooterContentSpacer,
   LIST_CARD_GAP,
   ListScreenHeader,
   ListScreenScrollView,
@@ -14,7 +15,6 @@ import {
   Screen,
   useBottomClearance,
 } from '../components/ui';
-import { FooterAdBanner } from '../components/AdBanner';
 
 const typeLabels: Record<string, string> = {
   btuTons: 'BTU ↔ Tons',
@@ -113,7 +113,7 @@ export function HistoryScreen() {
             );
           })
         )}
-        <FooterAdBanner />
+        <FooterContentSpacer />
       </ListScreenScrollView>
     </Screen>
   );

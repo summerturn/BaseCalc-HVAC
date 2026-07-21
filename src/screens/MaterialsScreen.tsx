@@ -9,6 +9,7 @@ import { Body, H2, Label, Small } from '../components/Type';
 import {
   Divider,
   EmptyState,
+  FooterContentSpacer,
   IconTile,
   ListScreenHeader,
   ListScreenScrollView,
@@ -20,7 +21,6 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
-import { FooterAdBanner } from '../components/AdBanner';
 
 type MaterialItem = {
   id: string;
@@ -226,7 +226,7 @@ export function MaterialsScreen() {
             />
           ))
         )}
-        <FooterAdBanner />
+        <FooterContentSpacer />
       </ListScreenScrollView>
 
       <View

@@ -1,14 +1,11 @@
 import { type ComponentProps, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
-  CalculationResult,
   HAVACEngine,
-  LiquidLineSize,
   MetricResult,
   RefrigerantType,
-  SuctionLineSize,
 } from '../engine/HAVACEngine';
 import { useAppStore } from '../store/useAppStore';
 import { CATEGORY } from '../theme/appTheme';
@@ -18,13 +15,13 @@ import { Body, Display, H1, H2, Label, Mono, Small } from '../components/Type';
 import {
   BackBar,
   Field,
+  FooterContentSpacer,
   FormScrollView,
   IconTile,
   MetricReadout,
   Panel,
   Pill,
   PrimaryButton,
-  ResultReadout,
   SCREEN_H_PAD,
   SCREEN_TOP_PAD,
   Screen,
@@ -33,12 +30,14 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
-import { FooterAdBanner } from '../components/AdBanner';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const fmt = (n: number, d: number) =>
-  n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const optionalNumber = (value: string): number | undefined =>
+  value.trim() === '' ? undefined : Number(value);
+const requiredNumber = (value: string): number =>
+  value.trim() === '' ? Number.NaN : Number(value);
+const SIGNED_DECIMAL_KEYBOARD = Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'numeric';
 const BRAND_ICON = require('../../assets/icon.png');
 
 type CalcDef = {
@@ -54,23 +53,23 @@ type CalcDef = {
 
 const CALCS: CalcDef[] = [
   { key: 'btu-tons', title: 'BTU ↔ Tons', subtitle: 'Capacity conversion', icon: 'whatshot', code: '12,000 BTU/ton', route: 'BtuTons', color: CATEGORY.load },
-  { key: 'cfm-btu', title: 'CFM from BTU', subtitle: 'Airflow from load', icon: 'air', code: 'Q = BTU ÷ (1.08 × ΔT)', route: 'CfmFromBtu', color: CATEGORY.airflow },
-  { key: 'btu-cfm', title: 'BTU from CFM', subtitle: 'Load from airflow', icon: 'thermostat', code: 'Q = CFM × 1.08 × ΔT', route: 'BtuFromCfm', color: CATEGORY.airflow },
+  { key: 'cfm-btu', title: 'Sensible CFM', subtitle: 'Standard-air estimate', icon: 'air', code: 'CFM = Qs ÷ (1.08 × ΔT)', route: 'CfmFromBtu', color: CATEGORY.airflow },
+  { key: 'btu-cfm', title: 'Sensible Heat', subtitle: 'Standard-air estimate', icon: 'thermostat', code: 'Qs = CFM × 1.08 × ΔT', route: 'BtuFromCfm', color: CATEGORY.airflow },
   { key: 'velocity', title: 'Air Velocity', subtitle: 'FPM from CFM', icon: 'speed', code: 'V = CFM ÷ A', route: 'AirVelocity', color: CATEGORY.airflow },
   { key: 'duct', title: 'Duct Sizing', subtitle: 'Round & rectangular', icon: 'line-weight', code: 'Area = CFM ÷ V', route: 'DuctSizing', color: CATEGORY.duct, proOnly: true },
   { key: 'psych', title: 'Psychrometrics', subtitle: 'Total / sensible / latent', icon: 'water-drop', code: '4.5 × CFM × Δh', route: 'Psychrometrics', color: CATEGORY.psychrometrics, proOnly: true },
-  { key: 'lines', title: 'Refrigerant Lines', subtitle: 'Suction & liquid sizes', icon: 'linear-scale', code: 'Line sizing', route: 'RefrigerantLines', color: CATEGORY.refrigerant, proOnly: true },
-  { key: 'sh-sc', title: 'Superheat / Subcool', subtitle: 'Charging targets', icon: 'device-thermostat', code: 'SH target', route: 'SuperheatSubcool', color: CATEGORY.refrigerant, proOnly: true },
-  { key: 'room-load', title: 'Room Load', subtitle: 'Quick load estimate', icon: 'room', code: 'Load calc', route: 'RoomLoad', color: CATEGORY.load, proOnly: true },
+  { key: 'lines', title: 'Refrigerant Lines', subtitle: 'Manufacturer data check', icon: 'linear-scale', code: 'Equivalent length check', route: 'RefrigerantLines', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'sh-sc', title: 'Superheat / Subcool', subtitle: 'Manufacturer target', icon: 'device-thermostat', code: 'Record target', route: 'SuperheatSubcool', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'room-load', title: 'Room Load', subtitle: 'Area-factor planning', icon: 'room', code: 'Not Manual J', route: 'RoomLoad', color: CATEGORY.load, proOnly: true },
   { key: 'hp-balance', title: 'Heat Pump Balance', subtitle: 'Balance point', icon: 'balance', code: 'Capacity vs loss', route: 'HeatPumpBalance', color: CATEGORY.load, proOnly: true },
   { key: 'hydronics', title: 'Hydronics', subtitle: 'BTU · GPM · ΔT', icon: 'water', code: 'Q = 500 × GPM × ΔT', route: 'Hydronics', color: CATEGORY.hydronics, proOnly: true },
   { key: 'mixed-air', title: 'Mixed Air', subtitle: 'OA + RA blend', icon: 'compare-arrows', code: 'MAT blend', route: 'MixedAir', color: CATEGORY.airflow, proOnly: true },
   { key: 'ach', title: 'Air Changes', subtitle: 'ACH from CFM', icon: 'cached', code: 'ACH = CFM × 60 ÷ V', route: 'AirChanges', color: CATEGORY.airflow, proOnly: true },
-  { key: 'evap', title: 'Evaporative Cooling', subtitle: 'Supply DB & tons', icon: 'opacity', code: 'Swamp cooler', route: 'EvaporativeCooling', color: CATEGORY.efficiency, proOnly: true },
-  { key: 'filter', title: 'Filter Velocity', subtitle: 'Face velocity & ΔP', icon: 'filter-alt', code: 'V = CFM ÷ A', route: 'FilterVelocity', color: CATEGORY.duct, proOnly: true },
-  { key: 'combustion', title: 'Combustion Analysis', subtitle: 'Excess air %', icon: 'fireplace', code: 'Excess air', route: 'CombustionAnalysis', color: CATEGORY.general, proOnly: true },
-  { key: 'charge', title: 'Refrigerant Weight', subtitle: 'Line-set charge', icon: 'scale', code: 'oz / lb', route: 'RefrigerantWeight', color: CATEGORY.refrigerant, proOnly: true },
-  { key: 'economizer', title: 'Economizer', subtitle: 'Minimum OA CFM', icon: 'cloud', code: 'OA = people + area', route: 'Economizer', color: CATEGORY.airflow, proOnly: true },
+  { key: 'evap', title: 'Evaporative Cooling', subtitle: 'Supply DB & sensible', icon: 'opacity', code: 'Air-side estimate', route: 'EvaporativeCooling', color: CATEGORY.efficiency, proOnly: true },
+  { key: 'filter', title: 'Filter Velocity', subtitle: 'Face velocity only', icon: 'filter-alt', code: 'V = CFM ÷ A', route: 'FilterVelocity', color: CATEGORY.duct, proOnly: true },
+  { key: 'combustion', title: 'O₂ Excess Air', subtitle: 'Dilution estimate only', icon: 'fireplace', code: 'O₂ ÷ (20.9 − O₂)', route: 'CombustionAnalysis', color: CATEGORY.general, proOnly: true },
+  { key: 'charge', title: 'Refrigerant Weight', subtitle: 'Manufacturer charge rate', icon: 'scale', code: 'Additional oz', route: 'RefrigerantWeight', color: CATEGORY.refrigerant, proOnly: true },
+  { key: 'economizer', title: 'Outdoor Airflow', subtitle: 'Supplied-rate Vbz', icon: 'cloud', code: 'Vbz = Rp×Pz + Ra×Az', route: 'Economizer', color: CATEGORY.airflow, proOnly: true },
 ];
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -303,7 +302,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
         <View style={{ marginTop: 6, marginBottom: 26 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <View style={{ backgroundColor: c.amberSoft, borderColor: withAlpha(c.amberBright, 0.4), borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
-              <Label tone="amber">HVAC Field Ready</Label>
+              <Label tone="amber">HVAC Field Toolkit</Label>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={{ width: 7, height: 7, borderRadius: 7, backgroundColor: c.pass, shadowColor: c.pass, shadowOpacity: 0.9, shadowRadius: 5 }} />
@@ -321,7 +320,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
               textAlign: 'center',
             }}
           >
-            HVAC field math for airflow, load, refrigerant, and hydronics.
+            HVAC field math with explicit inputs, assumptions, and equipment-data boundaries.
           </Body>
         </View>
 
@@ -359,7 +358,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
           </View>
         </View>
 
-        <FooterAdBanner />
+        <FooterContentSpacer />
       </ScrollView>
     </Screen>
   );
@@ -429,9 +428,9 @@ export function CfmFromBtuScreen() {
   };
 
   return (
-    <CalculatorShell title="CFM from BTU" code="CFM = BTU/hr ÷ (1.08 × ΔT)">
+    <CalculatorShell title="Sensible CFM" code="Near-sea-level standard-air estimate">
       <Panel>
-        <Field label="BTU/hr" suffix="BTU/hr" value={String(inputs.btu)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, btu: Number(t) || 0 })} />
+        <Field label="Sensible heat" suffix="BTU/hr" value={String(inputs.btu)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, btu: Number(t) || 0 })} />
         <Field label="Temperature difference" suffix="°F" value={String(inputs.deltaT)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, deltaT: Number(t) || 0 })} />
         <PrimaryButton label="Calculate" icon="air" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
@@ -454,7 +453,7 @@ export function BtuFromCfmScreen() {
   };
 
   return (
-    <CalculatorShell title="BTU from CFM" code="BTU/hr = CFM × 1.08 × ΔT">
+    <CalculatorShell title="Sensible Heat" code="Near-sea-level standard-air estimate">
       <Panel>
         <Field label="CFM" suffix="CFM" value={String(inputs.cfm)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfm: Number(t) || 0 })} />
         <Field label="Temperature difference" suffix="°F" value={String(inputs.deltaT)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, deltaT: Number(t) || 0 })} />
@@ -470,23 +469,23 @@ export function BtuFromCfmScreen() {
 export function DuctSizingScreen() {
   const { addCalculation } = useAppStore();
   const [inputs, setInputs] = useState({ cfm: 1000, velocity: 700, aspectRatio: 1 });
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
     const res = HAVACEngine.ductSizing(inputs);
     setResult(res);
-    addCalculation({ type: 'ductSizing', inputs, result: res });
+    if (res.ok) addCalculation({ type: 'ductSizing', inputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Duct Sizing" code="Area = CFM ÷ (velocity × 60)">
+    <CalculatorShell title="Duct Sizing" code="Area = CFM ÷ velocity">
       <Panel>
         <Field label="CFM" suffix="CFM" value={String(inputs.cfm)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfm: Number(t) || 0 })} />
         <Field label="Velocity" suffix="FPM" value={String(inputs.velocity)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, velocity: Number(t) || 0 })} />
         <Field label="Aspect ratio" suffix="W:H" value={String(inputs.aspectRatio)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, aspectRatio: Number(t) || 0 })} placeholder="1" />
         <PrimaryButton label="Calculate" icon="line-weight" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
-      <ResultReadout result={result} />
+      <MetricReadout result={result} accent={CATEGORY.duct} />
     </CalculatorShell>
   );
 }
@@ -520,10 +519,17 @@ export function AirVelocityScreen() {
 
 export function PsychrometricsScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ cfm: 1000, enterDb: 75, enterWb: 62, leaveDb: 55, leaveWb: 52 });
+  const [inputText, setInputText] = useState({ cfm: '1000', enterDb: '75', enterWb: '62', leaveDb: '55', leaveWb: '52' });
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
+    const inputs = {
+      cfm: requiredNumber(inputText.cfm),
+      enterDb: requiredNumber(inputText.enterDb),
+      enterWb: requiredNumber(inputText.enterWb),
+      leaveDb: requiredNumber(inputText.leaveDb),
+      leaveWb: requiredNumber(inputText.leaveWb),
+    };
     const res = HAVACEngine.psychrometrics(inputs);
     setResult(res);
     if (res.ok) addCalculation({ type: 'psychrometrics', inputs, result: res });
@@ -532,11 +538,11 @@ export function PsychrometricsScreen() {
   return (
     <CalculatorShell title="Psychrometrics" code="Total, sensible, latent BTU/hr">
       <Panel>
-        <Field label="CFM" suffix="CFM" value={String(inputs.cfm)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfm: Number(t) || 0 })} />
-        <Field label="Entering dry-bulb" suffix="°F" value={String(inputs.enterDb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, enterDb: Number(t) || 0 })} />
-        <Field label="Entering wet-bulb" suffix="°F" value={String(inputs.enterWb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, enterWb: Number(t) || 0 })} />
-        <Field label="Leaving dry-bulb" suffix="°F" value={String(inputs.leaveDb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, leaveDb: Number(t) || 0 })} />
-        <Field label="Leaving wet-bulb" suffix="°F" value={String(inputs.leaveWb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, leaveWb: Number(t) || 0 })} />
+        <Field label="CFM" suffix="CFM" value={inputText.cfm} keyboardType="numeric" onChangeText={(cfm) => setInputText({ ...inputText, cfm })} />
+        <Field label="Entering dry-bulb" suffix="°F" value={inputText.enterDb} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(enterDb) => setInputText({ ...inputText, enterDb })} />
+        <Field label="Entering wet-bulb" suffix="°F" value={inputText.enterWb} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(enterWb) => setInputText({ ...inputText, enterWb })} />
+        <Field label="Leaving dry-bulb" suffix="°F" value={inputText.leaveDb} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(leaveDb) => setInputText({ ...inputText, leaveDb })} />
+        <Field label="Leaving wet-bulb" suffix="°F" value={inputText.leaveWb} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(leaveWb) => setInputText({ ...inputText, leaveWb })} />
         <PrimaryButton label="Calculate" icon="water-drop" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.psychrometrics} />
@@ -550,22 +556,36 @@ const REFRIGERANT_LINE_TYPES = ['R410A', 'R32', 'R454B'] as const;
 
 export function RefrigerantLinesScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState<{ tons: number; refrigerant: 'R410A' | 'R32' | 'R454B'; lineLength: number }>({ tons: 3, refrigerant: 'R410A', lineLength: 25 });
+  const [inputs, setInputs] = useState({
+    tons: 3,
+    refrigerant: 'R410A' as 'R410A' | 'R32' | 'R454B',
+    equivalentLineLength: 25,
+    manufacturerSuctionSize: '',
+    manufacturerLiquidSize: '',
+  });
+  const [maxLengthText, setMaxLengthText] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
-    const res = HAVACEngine.refrigerantLines(inputs);
+    const nextInputs = {
+      ...inputs,
+      manufacturerMaxEquivalentLength: optionalNumber(maxLengthText),
+    };
+    const res = HAVACEngine.refrigerantLines(nextInputs);
     setResult(res);
-    if (res.ok) addCalculation({ type: 'refrigerantLines', inputs, result: res });
+    if (res.ok) addCalculation({ type: 'refrigerantLines', inputs: nextInputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Refrigerant Lines" code="Suction & liquid line sizes">
+    <CalculatorShell title="Refrigerant Lines" code="Manufacturer equivalent-length check">
       <Panel>
         <Field label="Tons" suffix="tons" value={String(inputs.tons)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, tons: Number(t) || 0 })} />
         <Segmented label="Refrigerant" value={inputs.refrigerant} options={REFRIGERANT_LINE_TYPES} onChange={(refrigerant) => setInputs({ ...inputs, refrigerant })} />
-        <Field label="Line length" suffix="ft" value={String(inputs.lineLength)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, lineLength: Number(t) || 0 })} />
-        <PrimaryButton label="Calculate" icon="linear-scale" onPress={calculate} style={{ marginTop: 4 }} />
+        <Field label="Equivalent line length" suffix="ft" value={String(inputs.equivalentLineLength)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, equivalentLineLength: Number(t) || 0 })} />
+        <Field label="Manufacturer maximum equivalent length" suffix="ft" value={maxLengthText} keyboardType="decimal-pad" onChangeText={setMaxLengthText} placeholder="Required" />
+        <Field label="Manufacturer suction line size" value={inputs.manufacturerSuctionSize} onChangeText={(manufacturerSuctionSize) => setInputs({ ...inputs, manufacturerSuctionSize })} placeholder="Required" />
+        <Field label="Manufacturer liquid line size" value={inputs.manufacturerLiquidSize} onChangeText={(manufacturerLiquidSize) => setInputs({ ...inputs, manufacturerLiquidSize })} placeholder="Required" />
+        <PrimaryButton label="Validate" icon="linear-scale" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.refrigerant} />
     </CalculatorShell>
@@ -575,27 +595,28 @@ export function RefrigerantLinesScreen() {
 // ─── Superheat / Subcooling ──────────────────────────────────────────
 
 const SH_SC_MODES = ['superheat', 'subcool'] as const;
-const SH_SC_REFRIGERANTS = ['R410A', 'R22', 'R32'] as const;
+const SH_SC_REFRIGERANTS: RefrigerantType[] = ['R410A', 'R22', 'R32', 'R454B'];
 
 export function SuperheatSubcoolScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ refrigerant: 'R410A' as 'R410A' | 'R22' | 'R32', outdoorTemp: 85, indoorWb: 63, mode: 'superheat' as 'superheat' | 'subcool' });
+  const [inputs, setInputs] = useState({ refrigerant: 'R410A' as RefrigerantType, mode: 'superheat' as 'superheat' | 'subcool' });
+  const [targetText, setTargetText] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
-    const res = HAVACEngine.superheatSubcool(inputs);
+    const nextInputs = { ...inputs, manufacturerTarget: optionalNumber(targetText) };
+    const res = HAVACEngine.superheatSubcool(nextInputs);
     setResult(res);
-    if (res.ok) addCalculation({ type: 'superheatSubcool', inputs, result: res });
+    if (res.ok) addCalculation({ type: 'superheatSubcool', inputs: nextInputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Superheat / Subcool" code="Charging target guides">
+    <CalculatorShell title="Superheat / Subcool" code="Record the equipment manufacturer's target">
       <Panel>
         <Segmented label="Mode" value={inputs.mode} options={SH_SC_MODES} onChange={(mode) => setInputs({ ...inputs, mode })} format={cap} />
         <Segmented label="Refrigerant" value={inputs.refrigerant} options={SH_SC_REFRIGERANTS} onChange={(refrigerant) => setInputs({ ...inputs, refrigerant })} />
-        <Field label="Outdoor dry-bulb" suffix="°F" value={String(inputs.outdoorTemp)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, outdoorTemp: Number(t) || 0 })} />
-        <Field label="Indoor wet-bulb" suffix="°F" value={String(inputs.indoorWb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, indoorWb: Number(t) || 0 })} />
-        <PrimaryButton label="Calculate" icon="device-thermostat" onPress={calculate} style={{ marginTop: 4 }} />
+        <Field label="Manufacturer target" suffix="°F" value={targetText} keyboardType="decimal-pad" onChangeText={setTargetText} placeholder="Required" />
+        <PrimaryButton label="Validate" icon="device-thermostat" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.refrigerant} />
     </CalculatorShell>
@@ -606,25 +627,25 @@ export function SuperheatSubcoolScreen() {
 
 export function RoomLoadScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ area: 300, ceilingHeight: 8, loadFactor: 35, occupants: 2, windows: 2, infiltration: 1, climateFactor: 1 });
+  const [areaText, setAreaText] = useState('');
+  const [loadFactorText, setLoadFactorText] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
+    const inputs = {
+      area: requiredNumber(areaText),
+      loadFactor: requiredNumber(loadFactorText),
+    };
     const res = HAVACEngine.roomLoad(inputs);
     setResult(res);
     if (res.ok) addCalculation({ type: 'roomLoad', inputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Room Load" code="Quick load estimate">
+    <CalculatorShell title="Room Load" code="Area-factor planning estimate, not Manual J">
       <Panel>
-        <Field label="Area" suffix="sq ft" value={String(inputs.area)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, area: Number(t) || 0 })} />
-        <Field label="Ceiling height" suffix="ft" value={String(inputs.ceilingHeight)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, ceilingHeight: Number(t) || 0 })} />
-        <Field label="Load factor" suffix="BTU/ft³" value={String(inputs.loadFactor)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, loadFactor: Number(t) || 0 })} />
-        <Field label="Occupants" value={String(inputs.occupants)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, occupants: Number(t) || 0 })} />
-        <Field label="Windows" value={String(inputs.windows)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, windows: Number(t) || 0 })} />
-        <Field label="Infiltration" value={String(inputs.infiltration)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, infiltration: Number(t) || 0 })} />
-        <Field label="Climate factor" value={String(inputs.climateFactor)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, climateFactor: Number(t) || 0 })} placeholder="1.0" />
+        <Field label="Area" suffix="sq ft" value={areaText} keyboardType="numeric" onChangeText={setAreaText} placeholder="Required" />
+        <Field label="User load factor" suffix="BTU/hr·ft²" value={loadFactorText} keyboardType="decimal-pad" onChangeText={setLoadFactorText} placeholder="Required" />
         <PrimaryButton label="Calculate" icon="room" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.load} />
@@ -636,10 +657,23 @@ export function RoomLoadScreen() {
 
 export function HeatPumpBalanceScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ designTemp: 20, capacityAt47: 36000, capacityAt17: 22000, heatLossPerDegree: 1000 });
+  const [inputText, setInputText] = useState({
+    designTemp: '',
+    capacityAt47: '',
+    capacityAt17: '',
+    heatLossPerDegree: '',
+    indoorSetpoint: '',
+  });
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
+    const inputs = {
+      designTemp: requiredNumber(inputText.designTemp),
+      capacityAt47: requiredNumber(inputText.capacityAt47),
+      capacityAt17: requiredNumber(inputText.capacityAt17),
+      heatLossPerDegree: requiredNumber(inputText.heatLossPerDegree),
+      indoorSetpoint: requiredNumber(inputText.indoorSetpoint),
+    };
     const res = HAVACEngine.heatPumpBalance(inputs);
     setResult(res);
     if (res.ok) addCalculation({ type: 'heatPumpBalance', inputs, result: res });
@@ -648,10 +682,11 @@ export function HeatPumpBalanceScreen() {
   return (
     <CalculatorShell title="Heat Pump Balance" code="Capacity vs heat loss">
       <Panel>
-        <Field label="Design temperature" suffix="°F" value={String(inputs.designTemp)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, designTemp: Number(t) || 0 })} />
-        <Field label="Capacity at 47°F" suffix="BTU/hr" value={String(inputs.capacityAt47)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, capacityAt47: Number(t) || 0 })} />
-        <Field label="Capacity at 17°F" suffix="BTU/hr" value={String(inputs.capacityAt17)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, capacityAt17: Number(t) || 0 })} />
-        <Field label="Heat loss per degree" suffix="BTU/hr·°F" value={String(inputs.heatLossPerDegree)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, heatLossPerDegree: Number(t) || 0 })} />
+        <Field label="Indoor setpoint" suffix="°F" value={inputText.indoorSetpoint} keyboardType="decimal-pad" onChangeText={(value) => setInputText({ ...inputText, indoorSetpoint: value })} placeholder="Required" />
+        <Field label="Design temperature" suffix="°F" value={inputText.designTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(value) => setInputText({ ...inputText, designTemp: value })} placeholder="Required" />
+        <Field label="Capacity at 47°F" suffix="BTU/hr" value={inputText.capacityAt47} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, capacityAt47: value })} placeholder="Manufacturer data" />
+        <Field label="Capacity at 17°F" suffix="BTU/hr" value={inputText.capacityAt17} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, capacityAt17: value })} placeholder="Manufacturer data" />
+        <Field label="Building heat-loss coefficient" suffix="BTU/hr·°F" value={inputText.heatLossPerDegree} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, heatLossPerDegree: value })} placeholder="Required" />
         <PrimaryButton label="Calculate" icon="balance" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.load} />
@@ -665,14 +700,14 @@ export function HydronicsScreen() {
   const { addCalculation } = useAppStore();
   const [btu, setBtu] = useState('');
   const [gpm, setGpm] = useState('');
-  const [deltaT, setDeltaT] = useState('20');
+  const [deltaT, setDeltaT] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
     const inputs = {
       btu: btu.trim() !== '' ? parseFloat(btu) : undefined,
       gpm: gpm.trim() !== '' ? parseFloat(gpm) : undefined,
-      deltaT: parseFloat(deltaT) || 0,
+      deltaT: deltaT.trim() !== '' ? parseFloat(deltaT) : undefined,
     };
     const res = HAVACEngine.hydronics(inputs);
     setResult(res);
@@ -680,12 +715,12 @@ export function HydronicsScreen() {
   };
 
   return (
-    <CalculatorShell title="Hydronics" code="BTU = GPM × 500 × ΔT">
+    <CalculatorShell title="Water-Side Hydronics" code="Water only: BTU/hr = GPM × 500 × ΔT">
       <Panel>
-        <Body tone="muted" style={{ marginBottom: 16 }}>Enter two of BTU/hr, GPM, or ΔT to solve for the third.</Body>
+        <Body tone="muted" style={{ marginBottom: 16 }}>Enter any two values to solve for the third. Enter all three to check consistency. The 500 factor is for water, not glycol.</Body>
         <Field label="BTU/hr" value={btu} onChangeText={setBtu} keyboardType="numeric" placeholder="—" />
         <Field label="GPM" value={gpm} onChangeText={setGpm} keyboardType="decimal-pad" placeholder="—" />
-        <Field label="Temperature difference" suffix="°F" value={deltaT} onChangeText={setDeltaT} keyboardType="decimal-pad" />
+        <Field label="Temperature difference" suffix="°F" value={deltaT} onChangeText={setDeltaT} keyboardType="decimal-pad" placeholder="—" />
         <PrimaryButton label="Calculate" icon="water" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.hydronics} />
@@ -697,10 +732,15 @@ export function HydronicsScreen() {
 
 export function MixedAirScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ oaPercent: 20, oaTemp: 95, raTemp: 75 });
+  const [inputText, setInputText] = useState({ oaPercent: '20', oaTemp: '95', raTemp: '75' });
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
+    const inputs = {
+      oaPercent: requiredNumber(inputText.oaPercent),
+      oaTemp: requiredNumber(inputText.oaTemp),
+      raTemp: requiredNumber(inputText.raTemp),
+    };
     const res = HAVACEngine.mixedAir(inputs);
     setResult(res);
     if (res.ok) addCalculation({ type: 'mixedAir', inputs, result: res });
@@ -709,9 +749,9 @@ export function MixedAirScreen() {
   return (
     <CalculatorShell title="Mixed Air" code="MAT = (OA% × OA) + (RA% × RA)">
       <Panel>
-        <Field label="Outdoor air %" suffix="%" value={String(inputs.oaPercent)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, oaPercent: Number(t) || 0 })} />
-        <Field label="Outdoor air temp" suffix="°F" value={String(inputs.oaTemp)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, oaTemp: Number(t) || 0 })} />
-        <Field label="Return air temp" suffix="°F" value={String(inputs.raTemp)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, raTemp: Number(t) || 0 })} />
+        <Field label="Outdoor air %" suffix="%" value={inputText.oaPercent} keyboardType="numeric" onChangeText={(oaPercent) => setInputText({ ...inputText, oaPercent })} />
+        <Field label="Outdoor air temp" suffix="°F" value={inputText.oaTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(oaTemp) => setInputText({ ...inputText, oaTemp })} />
+        <Field label="Return air temp" suffix="°F" value={inputText.raTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} onChangeText={(raTemp) => setInputText({ ...inputText, raTemp })} />
         <PrimaryButton label="Calculate" icon="compare-arrows" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.airflow} />
@@ -748,7 +788,7 @@ export function AirChangesScreen() {
 
 export function EvaporativeCoolingScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ oaDb: 95, oaWb: 68, efficiency: 0.8, cfm: 1600, cfmPerTon: 400 });
+  const [inputs, setInputs] = useState({ oaDb: 95, oaWb: 68, efficiency: 0.8, cfm: 1600 });
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
@@ -758,13 +798,12 @@ export function EvaporativeCoolingScreen() {
   };
 
   return (
-    <CalculatorShell title="Evaporative Cooling" code="Supply DB = DB − eff × (DB − WB)">
+    <CalculatorShell title="Evaporative Cooling" code="Supply DB and sensible air-side estimate">
       <Panel>
         <Field label="Outdoor dry-bulb" suffix="°F" value={String(inputs.oaDb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, oaDb: Number(t) || 0 })} />
         <Field label="Outdoor wet-bulb" suffix="°F" value={String(inputs.oaWb)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, oaWb: Number(t) || 0 })} />
         <Field label="CFM" suffix="CFM" value={String(inputs.cfm)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfm: Number(t) || 0 })} />
         <Field label="Efficiency" suffix="decimal" value={String(inputs.efficiency)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, efficiency: Number(t) || 0 })} placeholder="0.8" />
-        <Field label="CFM per ton" suffix="CFM/ton" value={String(inputs.cfmPerTon)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfmPerTon: Number(t) || 0 })} />
         <PrimaryButton label="Calculate" icon="opacity" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.efficiency} />
@@ -777,51 +816,45 @@ export function EvaporativeCoolingScreen() {
 export function FilterVelocityScreen() {
   const { addCalculation } = useAppStore();
   const [inputs, setInputs] = useState({ cfm: 1200, filterWidth: 16, filterHeight: 25 });
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
     const res = HAVACEngine.filterVelocity(inputs);
     setResult(res);
-    addCalculation({ type: 'filterVelocity', inputs, result: res });
+    if (res.ok) addCalculation({ type: 'filterVelocity', inputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Filter Velocity" code="Face velocity & pressure drop">
+    <CalculatorShell title="Filter Velocity" code="Face velocity only">
       <Panel>
         <Field label="CFM" suffix="CFM" value={String(inputs.cfm)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfm: Number(t) || 0 })} />
         <Field label="Filter width" suffix="in" value={String(inputs.filterWidth)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, filterWidth: Number(t) || 0 })} />
         <Field label="Filter height" suffix="in" value={String(inputs.filterHeight)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, filterHeight: Number(t) || 0 })} />
         <PrimaryButton label="Calculate" icon="filter-alt" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
-      <ResultReadout result={result} />
+      <MetricReadout result={result} accent={CATEGORY.duct} />
     </CalculatorShell>
   );
 }
 
-// ─── Combustion Analysis ─────────────────────────────────────────────
-
-const FUEL_TYPES = ['naturalGas', 'propane', 'oil'] as const;
+// ─── O₂ Excess Air ──────────────────────────────────────────────────
 
 export function CombustionAnalysisScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ fuel: 'naturalGas' as 'naturalGas' | 'propane' | 'oil', o2: 6, co2: undefined as number | undefined });
-  const [co2Text, setCo2Text] = useState('');
+  const [o2Text, setO2Text] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
-    const co2 = co2Text.trim() !== '' ? parseFloat(co2Text) : undefined;
-    const nextInputs = { ...inputs, co2 };
-    const res = HAVACEngine.combustionAnalysis(nextInputs);
+    const inputs = { o2: requiredNumber(o2Text) };
+    const res = HAVACEngine.combustionAnalysis(inputs);
     setResult(res);
-    if (res.ok) addCalculation({ type: 'combustionAnalysis', inputs: nextInputs, result: res });
+    if (res.ok) addCalculation({ type: 'combustionAnalysis', inputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Combustion Analysis" code="Excess air from O2 or CO2">
+    <CalculatorShell title="O₂ Excess Air" code="Dry-flue-gas dilution estimate, not a safety result">
       <Panel>
-        <Segmented label="Fuel" value={inputs.fuel} options={FUEL_TYPES} onChange={(fuel) => setInputs({ ...inputs, fuel })} format={cap} />
-        <Field label="O2" suffix="%" value={String(inputs.o2)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, o2: Number(t) || 0 })} />
-        <Field label="CO2 (optional)" suffix="%" value={co2Text} keyboardType="decimal-pad" onChangeText={setCo2Text} placeholder="—" />
+        <Field label="Measured O₂" suffix="%" value={o2Text} keyboardType="decimal-pad" onChangeText={setO2Text} placeholder="Required measurement" />
         <PrimaryButton label="Calculate" icon="fireplace" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.general} />
@@ -831,35 +864,35 @@ export function CombustionAnalysisScreen() {
 
 // ─── Refrigerant Weight ──────────────────────────────────────────────
 
-const LIQUID_LINE_SIZES: LiquidLineSize[] = ['3/8', '1/2', '5/8'];
-const SUCTION_LINE_SIZES: SuctionLineSize[] = ['3/4', '7/8', '1-1/8'];
-const CHARGE_REFRIGERANTS: ('R410A' | 'R22')[] = ['R410A', 'R22'];
+const CHARGE_REFRIGERANTS: RefrigerantType[] = ['R410A', 'R22', 'R32', 'R454B'];
 
 export function RefrigerantWeightScreen() {
   const { addCalculation } = useAppStore();
   const [inputs, setInputs] = useState({
-    liquidLineLength: 15,
-    suctionLineLength: 15,
-    liquidLineSize: '3/8' as LiquidLineSize,
-    suctionLineSize: '3/4' as SuctionLineSize,
-    refrigerant: 'R410A' as 'R410A' | 'R22',
+    installedLineLength: 15,
+    factoryAllowance: 15,
+    refrigerant: 'R410A' as RefrigerantType,
   });
+  const [chargeRateText, setChargeRateText] = useState('');
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
-    const res = HAVACEngine.refrigerantWeight(inputs);
+    const nextInputs = {
+      ...inputs,
+      manufacturerChargeRate: optionalNumber(chargeRateText),
+    };
+    const res = HAVACEngine.refrigerantWeight(nextInputs);
     setResult(res);
-    if (res.ok) addCalculation({ type: 'refrigerantWeight', inputs, result: res });
+    if (res.ok) addCalculation({ type: 'refrigerantWeight', inputs: nextInputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Refrigerant Weight" code="Line-set charge estimate">
+    <CalculatorShell title="Refrigerant Weight" code="Additional charge from manufacturer data">
       <Panel>
         <Segmented label="Refrigerant" value={inputs.refrigerant} options={CHARGE_REFRIGERANTS} onChange={(refrigerant) => setInputs({ ...inputs, refrigerant })} />
-        <Field label="Liquid line length" suffix="ft" value={String(inputs.liquidLineLength)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, liquidLineLength: Number(t) || 0 })} />
-        <Segmented label="Liquid line size" value={inputs.liquidLineSize} options={LIQUID_LINE_SIZES} onChange={(liquidLineSize) => setInputs({ ...inputs, liquidLineSize })} />
-        <Field label="Suction line length" suffix="ft" value={String(inputs.suctionLineLength)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, suctionLineLength: Number(t) || 0 })} />
-        <Segmented label="Suction line size" value={inputs.suctionLineSize} options={SUCTION_LINE_SIZES} onChange={(suctionLineSize) => setInputs({ ...inputs, suctionLineSize })} />
+        <Field label="Installed line length" suffix="ft" value={String(inputs.installedLineLength)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, installedLineLength: Number(t) || 0 })} />
+        <Field label="Factory line allowance" suffix="ft" value={String(inputs.factoryAllowance)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, factoryAllowance: Number(t) || 0 })} />
+        <Field label="Manufacturer additional-charge rate" suffix="oz/ft" value={chargeRateText} keyboardType="decimal-pad" onChangeText={setChargeRateText} placeholder="Required" />
         <PrimaryButton label="Calculate" icon="scale" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.refrigerant} />
@@ -867,26 +900,37 @@ export function RefrigerantWeightScreen() {
   );
 }
 
-// ─── Economizer ──────────────────────────────────────────────────────
+// ─── Outdoor Airflow ─────────────────────────────────────────────────
 
 export function EconomizerScreen() {
   const { addCalculation } = useAppStore();
-  const [inputs, setInputs] = useState({ zoneArea: 1000, occupancyDensity: 100, cfmPerPerson: 5, cfmPerArea: 0.06 });
+  const [inputText, setInputText] = useState({
+    zoneArea: '',
+    occupancyDensity: '',
+    cfmPerPerson: '',
+    cfmPerArea: '',
+  });
   const [result, setResult] = useState<MetricResult | null>(null);
 
   const calculate = () => {
+    const inputs = {
+      zoneArea: requiredNumber(inputText.zoneArea),
+      occupancyDensity: requiredNumber(inputText.occupancyDensity),
+      cfmPerPerson: requiredNumber(inputText.cfmPerPerson),
+      cfmPerArea: requiredNumber(inputText.cfmPerArea),
+    };
     const res = HAVACEngine.economizer(inputs);
     setResult(res);
     if (res.ok) addCalculation({ type: 'economizer', inputs, result: res });
   };
 
   return (
-    <CalculatorShell title="Economizer" code="Minimum outdoor air CFM">
+    <CalculatorShell title="Outdoor Airflow" code="Breathing-zone airflow from supplied rates">
       <Panel>
-        <Field label="Zone area" suffix="ft²" value={String(inputs.zoneArea)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, zoneArea: Number(t) || 0 })} />
-        <Field label="Occupancy density" suffix="ft²/person" value={String(inputs.occupancyDensity)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, occupancyDensity: Number(t) || 0 })} />
-        <Field label="CFM per person" suffix="CFM" value={String(inputs.cfmPerPerson)} keyboardType="numeric" onChangeText={(t) => setInputs({ ...inputs, cfmPerPerson: Number(t) || 0 })} />
-        <Field label="CFM per area" suffix="CFM/ft²" value={String(inputs.cfmPerArea)} keyboardType="decimal-pad" onChangeText={(t) => setInputs({ ...inputs, cfmPerArea: Number(t) || 0 })} />
+        <Field label="Zone area" suffix="ft²" value={inputText.zoneArea} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, zoneArea: value })} placeholder="Required" />
+        <Field label="Occupancy density" suffix="ft²/person" value={inputText.occupancyDensity} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, occupancyDensity: value })} placeholder="Supplied design value" />
+        <Field label="CFM per person" suffix="CFM" value={inputText.cfmPerPerson} keyboardType="numeric" onChangeText={(value) => setInputText({ ...inputText, cfmPerPerson: value })} placeholder="Supplied rate" />
+        <Field label="CFM per area" suffix="CFM/ft²" value={inputText.cfmPerArea} keyboardType="decimal-pad" onChangeText={(value) => setInputText({ ...inputText, cfmPerArea: value })} placeholder="Supplied rate" />
         <PrimaryButton label="Calculate" icon="cloud" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.airflow} />

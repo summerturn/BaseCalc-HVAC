@@ -9,6 +9,7 @@ import { Body, Label, Mono, Small } from '../components/Type';
 import {
   CONTROL_GAP,
   Field,
+  FooterContentSpacer,
   ListScreenHeader,
   ListScreenScrollView,
   Panel,
@@ -18,7 +19,6 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
-import { FooterAdBanner } from '../components/AdBanner';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -65,7 +65,7 @@ export function SettingsScreen() {
               <View style={{ flex: 1, paddingRight: 14 }}>
                 <Body tone="primary">{isPro ? 'Pro plan' : 'Free plan'}</Body>
                 <Small tone="muted" style={{ marginTop: 4 }}>
-                  {isPro ? 'Ads are hidden and Pro limits are unlocked on this device.' : 'Upgrade to remove ads and unlock the full local workflow.'}
+                  {isPro ? 'All calculators and expanded local record limits are unlocked.' : 'Upgrade to unlock all calculators and expanded local record limits.'}
                 </Small>
               </View>
               <MaterialIcons name={isPro ? 'workspace-premium' : 'person-outline'} size={24} color={isPro ? c.amber : c.textMuted} />
@@ -120,9 +120,9 @@ export function SettingsScreen() {
         <PrimaryButton label={saved ? 'Saved ✓' : 'Save settings'} icon={saved ? undefined : 'save'} onPress={handleSave} />
         <Small style={{ textAlign: 'center', marginTop: 18 }}>BaseCalc HVAC v1.0 · HVAC field reference</Small>
         <Small tone="muted" style={{ textAlign: 'center', marginTop: 10 }}>
-          Everything you save in BaseCalc HVAC stays locally on this device, protected by your device security. BaseCalc HVAC does not use cloud sync, and there will not be a cloud option.
+          Job contacts, worksheets, calculations, and company settings use this app's local storage. Subscription status is checked with RevenueCat; exports leave the app only when you choose to share them.
         </Small>
-        <FooterAdBanner />
+        <FooterContentSpacer />
       </ListScreenScrollView>
     </Screen>
   );

@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
+import { AppState as NativeAppState } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -39,6 +40,9 @@ import { PaywallScreen } from './src/screens/PaywallScreen';
 import { TAB_BAR_MIN_HEIGHT } from './src/components/ui';
 import { AppThemeProvider, useAppTheme } from './src/theme/useAppTheme';
 import { fontMap } from './src/theme/typography';
+import { useAppStore } from './src/store/useAppStore';
+import { SubscriptionService } from './src/services/SubscriptionService';
+import { isRevenueCatConfigured } from './src/lib/config';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -55,29 +59,73 @@ const TAB_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
 
 function CalculatorStack() {
   const { colors } = useAppTheme();
+  const { isPro } = useAppStore();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="CalculatorDashboard" component={CalculatorDashboardScreen} />
       <Stack.Screen name="BtuTons" component={BtuTonsScreen} />
       <Stack.Screen name="CfmFromBtu" component={CfmFromBtuScreen} />
       <Stack.Screen name="BtuFromCfm" component={BtuFromCfmScreen} />
-      <Stack.Screen name="DuctSizing" component={DuctSizingScreen} />
       <Stack.Screen name="AirVelocity" component={AirVelocityScreen} />
-      <Stack.Screen name="Psychrometrics" component={PsychrometricsScreen} />
-      <Stack.Screen name="RefrigerantLines" component={RefrigerantLinesScreen} />
-      <Stack.Screen name="SuperheatSubcool" component={SuperheatSubcoolScreen} />
-      <Stack.Screen name="RoomLoad" component={RoomLoadScreen} />
-      <Stack.Screen name="HeatPumpBalance" component={HeatPumpBalanceScreen} />
-      <Stack.Screen name="Hydronics" component={HydronicsScreen} />
-      <Stack.Screen name="MixedAir" component={MixedAirScreen} />
-      <Stack.Screen name="AirChanges" component={AirChangesScreen} />
-      <Stack.Screen name="EvaporativeCooling" component={EvaporativeCoolingScreen} />
-      <Stack.Screen name="FilterVelocity" component={FilterVelocityScreen} />
-      <Stack.Screen name="CombustionAnalysis" component={CombustionAnalysisScreen} />
-      <Stack.Screen name="RefrigerantWeight" component={RefrigerantWeightScreen} />
-      <Stack.Screen name="Economizer" component={EconomizerScreen} />
+      {isPro ? (
+        <>
+          <Stack.Screen name="DuctSizing" component={DuctSizingScreen} />
+          <Stack.Screen name="Psychrometrics" component={PsychrometricsScreen} />
+          <Stack.Screen name="RefrigerantLines" component={RefrigerantLinesScreen} />
+          <Stack.Screen name="SuperheatSubcool" component={SuperheatSubcoolScreen} />
+          <Stack.Screen name="RoomLoad" component={RoomLoadScreen} />
+          <Stack.Screen name="HeatPumpBalance" component={HeatPumpBalanceScreen} />
+          <Stack.Screen name="Hydronics" component={HydronicsScreen} />
+          <Stack.Screen name="MixedAir" component={MixedAirScreen} />
+          <Stack.Screen name="AirChanges" component={AirChangesScreen} />
+          <Stack.Screen name="EvaporativeCooling" component={EvaporativeCoolingScreen} />
+          <Stack.Screen name="FilterVelocity" component={FilterVelocityScreen} />
+          <Stack.Screen name="CombustionAnalysis" component={CombustionAnalysisScreen} />
+          <Stack.Screen name="RefrigerantWeight" component={RefrigerantWeightScreen} />
+          <Stack.Screen name="Economizer" component={EconomizerScreen} />
+        </>
+      ) : null}
     </Stack.Navigator>
   );
+}
+
+function SubscriptionLifecycle() {
+  const { refreshProStatus, setPro } = useAppStore();
+
+  useEffect(() => {
+    let mounted = true;
+    let removeRevenueCatListener: (() => void) | undefined;
+
+    void refreshProStatus();
+
+    if (isRevenueCatConfigured()) {
+      void SubscriptionService.subscribeToStatus((isPro) => {
+        if (mounted) setPro(isPro);
+      })
+        .then((removeListener) => {
+          if (mounted) {
+            removeRevenueCatListener = removeListener;
+          } else {
+            removeListener();
+          }
+        })
+        .catch((error: unknown) => {
+          console.warn('[RevenueCat] Customer-info listener unavailable:', error);
+        });
+    }
+
+    const appStateSubscription = NativeAppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') void refreshProStatus();
+    });
+
+    return () => {
+      mounted = false;
+      appStateSubscription.remove();
+      removeRevenueCatListener?.();
+    };
+  }, [refreshProStatus, setPro]);
+
+  return null;
 }
 
 function ClientStack() {
@@ -160,6 +208,7 @@ function Root() {
   return (
     <>
       <StatusBar style={colors.statusBarStyle} />
+      <SubscriptionLifecycle />
       <NavigationContainer theme={navTheme}>
         <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
           <Stack.Screen name="Main" component={MainTabs} />

@@ -1,4 +1,6 @@
 # Build and tool artifacts
+.git
+node_modules/
 .expo/
 dist/
 web-build/
@@ -13,6 +15,7 @@ work/
 *.key
 *.mobileprovision
 credentials.json
+/deploy/google-play-service-account.json
 
 # Generated native folders
 ios/
@@ -26,7 +29,6 @@ artifacts/
 supabase/.temp/
 
 # Temporary scripts and logs
-scripts/generate-brand-assets 2.mjs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
