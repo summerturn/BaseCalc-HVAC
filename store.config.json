@@ -33,7 +33,7 @@
       "BUSINESS"
     ],
     "release": {
-      "automaticRelease": false
+      "automaticRelease": true
     },
     "advisory": {
       "alcoholTobaccoOrDrugUseOrReferences": "NONE",
