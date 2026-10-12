@@ -8,9 +8,9 @@ import Purchases, {
   type PurchasesPackage,
   type PurchasesStoreProduct,
 } from 'react-native-purchases';
-import { CONFIG, isRevenueCatConfigured, SUBSCRIPTION_ENTITLEMENT_ID, SUBSCRIPTION_TIERS } from '../lib/config';
+import { CONFIG, isRevenueCatConfigured, LIFETIME_PRODUCT_ID, SUBSCRIPTION_ENTITLEMENT_ID, SUBSCRIPTION_TIERS } from '../lib/config';
 
-export type PlanKey = 'monthly' | 'yearly';
+export type PlanKey = 'monthly' | 'yearly' | 'lifetime';
 type PlanMap<T> = Record<PlanKey, T>;
 
 export type SubscriptionStatusOptions = {
@@ -46,12 +46,16 @@ function productMatchesPlan(productIdentifier: string, configuredIdentifier: str
 }
 
 function productIdentifierForPlan(plan: PlanKey): string {
-  return plan === 'monthly' ? SUBSCRIPTION_TIERS.monthly : SUBSCRIPTION_TIERS.yearly;
+  if (plan === 'monthly') return SUBSCRIPTION_TIERS.monthly;
+  if (plan === 'yearly') return SUBSCRIPTION_TIERS.yearly;
+  return LIFETIME_PRODUCT_ID;
 }
 
 function productIdentifierCandidatesForPlan(plan: PlanKey): string[] {
   const identifier = productIdentifierForPlan(plan);
-  if (Platform.OS !== 'android') return [identifier];
+  // Android one-time products (lifetime) are not sold as subscription base plans,
+  // so they never carry the ":<basePlanId>" suffix that monthly/yearly do.
+  if (Platform.OS !== 'android' || plan === 'lifetime') return [identifier];
   return [identifier, `${identifier}:${plan}`];
 }
 
@@ -66,6 +70,7 @@ function emptyPlanMap<T>(value: T): PlanMap<T> {
   return {
     monthly: value,
     yearly: value,
+    lifetime: value,
   };
 }
 
@@ -73,6 +78,7 @@ function productsForPlans(products: PurchasesStoreProduct[]): PlanMap<PurchasesS
   return {
     monthly: products.find((product) => productMatchesPlan(product.identifier, SUBSCRIPTION_TIERS.monthly)) ?? null,
     yearly: products.find((product) => productMatchesPlan(product.identifier, SUBSCRIPTION_TIERS.yearly)) ?? null,
+    lifetime: products.find((product) => productMatchesPlan(product.identifier, LIFETIME_PRODUCT_ID)) ?? null,
   };
 }
 
@@ -81,7 +87,9 @@ function storefrontReady(storefront: SubscriptionStorefront): boolean {
     storefront.packages.monthly ??
       storefront.products.monthly ??
       storefront.packages.yearly ??
-      storefront.products.yearly
+      storefront.products.yearly ??
+      storefront.packages.lifetime ??
+      storefront.products.lifetime
   );
 }
 
@@ -107,7 +115,8 @@ function currentOffering(offerings: PurchasesOfferings): PurchasesOffering | nul
   ].filter((offering): offering is PurchasesOffering => offering !== null && offering !== undefined);
   return candidates.find((offering) => offering.availablePackages.some((pkg) =>
     productMatchesPlan(pkg.product.identifier, SUBSCRIPTION_TIERS.monthly) ||
-    productMatchesPlan(pkg.product.identifier, SUBSCRIPTION_TIERS.yearly)
+    productMatchesPlan(pkg.product.identifier, SUBSCRIPTION_TIERS.yearly) ||
+    productMatchesPlan(pkg.product.identifier, LIFETIME_PRODUCT_ID)
   )) ?? null;
 }
 
@@ -147,21 +156,33 @@ export const SubscriptionService = {
       offering = currentOffering(offerings);
       packages.monthly = packageForPlan(offering, 'monthly');
       packages.yearly = packageForPlan(offering, 'yearly');
+      packages.lifetime = packageForPlan(offering, 'lifetime');
       products.monthly = packages.monthly?.product ?? null;
       products.yearly = packages.yearly?.product ?? null;
+      products.lifetime = packages.lifetime?.product ?? null;
     } catch (error) {
       console.error('[RevenueCat] getOfferings failed:', error);
     }
 
     if (!products.monthly || !products.yearly) {
       try {
-        const productIdentifiers = Array.from(new Set<PlanKey>(['monthly', 'yearly']).values())
+        const productIdentifiers = (['monthly', 'yearly'] as const)
           .flatMap((plan) => productIdentifierCandidatesForPlan(plan));
         const directProducts = productsForPlans(await Purchases.getProducts(productIdentifiers, PURCHASE_TYPE.SUBS));
         products.monthly = products.monthly ?? directProducts.monthly;
         products.yearly = products.yearly ?? directProducts.yearly;
       } catch (error) {
-        console.error('[RevenueCat] getProducts failed:', error);
+        console.error('[RevenueCat] getProducts (subscriptions) failed:', error);
+      }
+    }
+
+    if (!products.lifetime) {
+      try {
+        const productIdentifiers = productIdentifierCandidatesForPlan('lifetime');
+        const directProducts = productsForPlans(await Purchases.getProducts(productIdentifiers, PURCHASE_TYPE.INAPP));
+        products.lifetime = products.lifetime ?? directProducts.lifetime;
+      } catch (error) {
+        console.error('[RevenueCat] getProducts (lifetime) failed:', error);
       }
     }
 

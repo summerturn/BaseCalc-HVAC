@@ -1,11 +1,11 @@
-import { type ComponentProps, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { PURCHASES_ERROR_CODE, type PurchasesStoreProduct } from 'react-native-purchases';
 import { useAppStore } from '../store/useAppStore';
 import { useColors } from '../theme/useAppTheme';
-import { isRevenueCatConfigured, SUBSCRIPTION_TIERS } from '../lib/config';
+import { isRevenueCatConfigured } from '../lib/config';
 import { Body, Display, H2, Label, Small } from '../components/Type';
 import {
   BackBar,
@@ -18,21 +18,9 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
-import { SubscriptionService, type PlanKey, type SubscriptionStorefront } from '../services/SubscriptionService';
+import { SubscriptionService, type SubscriptionStorefront } from '../services/SubscriptionService';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
-
-type PlanViewModel = {
-  key: PlanKey;
-  title: string;
-  badge: string;
-  subtitle: string;
-  price: string;
-  cadence: string;
-  detail: string;
-  cta: string;
-  available: boolean;
-};
 
 type AccessSection = {
   title: string;
@@ -79,26 +67,8 @@ const PRO_FEATURES = [
   'Keep the four most-used airflow and capacity checks free',
   'Unlimited local job contacts and open worksheets',
   'Keep local job history, contacts, and worksheets available in the app',
+  'Pay once — no recurring charge, ever',
 ];
-
-const PLAN_COPY: Record<PlanKey, Omit<PlanViewModel, 'price' | 'detail' | 'available'>> = {
-  yearly: {
-    key: 'yearly',
-    title: 'Yearly',
-    badge: 'BEST VALUE',
-    subtitle: 'One year of complete Pro calculator access',
-    cadence: '/yr',
-    cta: 'Subscribe yearly',
-  },
-  monthly: {
-    key: 'monthly',
-    title: 'Monthly',
-    badge: 'FLEXIBLE',
-    subtitle: 'One month of complete Pro calculator access',
-    cadence: '/mo',
-    cta: 'Subscribe monthly',
-  },
-};
 
 function errorMessage(error: unknown): string {
   if (typeof error === 'object' && error !== null) {
@@ -126,7 +96,7 @@ function errorMessage(error: unknown): string {
 
 function storeUnavailableMessage(): string {
   const storeName = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
-  return `The ${storeName} checkout is not available for this install yet. Please use a store-enabled build after the subscription products finish syncing.`;
+  return `The ${storeName} checkout is not available for this install yet. Please use a store-enabled build after Lifetime Pro finishes syncing.`;
 }
 
 async function openLegalDocument(url: string): Promise<void> {
@@ -142,38 +112,9 @@ async function openLegalDocument(url: string): Promise<void> {
   }
 }
 
-function storeProductForPlan(storefront: SubscriptionStorefront | null, plan: PlanKey): PurchasesStoreProduct | null {
+function lifetimeProductFrom(storefront: SubscriptionStorefront | null): PurchasesStoreProduct | null {
   if (!storefront) return null;
-  return storefront.packages[plan]?.product ?? storefront.products[plan];
-}
-
-function planDetail(plan: PlanKey, product: PurchasesStoreProduct | null): string {
-  if (!product) return 'Product not returned by the store';
-  if (plan === 'yearly') {
-    return product?.pricePerMonthString
-      ? `${product.pricePerMonthString}/mo equivalent`
-      : 'Billed yearly';
-  }
-  return 'Cancel anytime';
-}
-
-function buildPlans(storefront: SubscriptionStorefront | null): Record<PlanKey, PlanViewModel> {
-  const monthlyProduct = storeProductForPlan(storefront, 'monthly');
-  const yearlyProduct = storeProductForPlan(storefront, 'yearly');
-  return {
-    yearly: {
-      ...PLAN_COPY.yearly,
-      price: yearlyProduct?.priceString ?? 'Unavailable',
-      detail: planDetail('yearly', yearlyProduct),
-      available: yearlyProduct !== null,
-    },
-    monthly: {
-      ...PLAN_COPY.monthly,
-      price: monthlyProduct?.priceString ?? 'Unavailable',
-      detail: planDetail('monthly', monthlyProduct),
-      available: monthlyProduct !== null,
-    },
-  };
+  return storefront.packages.lifetime?.product ?? storefront.products.lifetime;
 }
 
 function AccessPanel({ section, compact }: { section: AccessSection; compact: boolean }) {
@@ -207,48 +148,32 @@ function AccessPanel({ section, compact }: { section: AccessSection; compact: bo
   );
 }
 
-function PlanCard({
-  plan,
-  active,
-  loading,
-  onSelect,
-}: {
-  plan: PlanViewModel;
-  active: boolean;
-  loading: boolean;
-  onSelect: () => void;
-}) {
+function LifetimeCard({ price, available, compact }: { price: string; available: boolean; compact: boolean }) {
   const c = useColors();
   return (
-    <Pressable onPress={onSelect} disabled={loading || !plan.available} style={({ pressed }) => ({ opacity: !plan.available ? 0.55 : pressed ? 0.82 : 1 })}>
-      <Panel
-        style={{
-          borderColor: active ? c.amberBright : c.border,
-          backgroundColor: active ? withAlpha(c.amberBright, c.mode === 'dark' ? 0.09 : 0.12) : c.panel,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <MaterialIcons
-                name={active ? 'radio-button-checked' : plan.available ? 'radio-button-unchecked' : 'block'}
-                size={20}
-                color={active ? c.amberBright : c.textMuted}
-              />
-              <H2 numberOfLines={1}>{plan.title}</H2>
-            </View>
-            <Small tone="muted">{plan.subtitle}</Small>
+    <Panel
+      style={{
+        borderColor: available ? c.amberBright : c.border,
+        backgroundColor: available ? withAlpha(c.amberBright, c.mode === 'dark' ? 0.09 : 0.12) : c.panel,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+            <MaterialIcons name="workspace-premium" size={20} color={available ? c.amberBright : c.textMuted} />
+            <H2 numberOfLines={1}>Lifetime Pro</H2>
           </View>
-          <Pill label={plan.available ? plan.badge : 'UNAVAILABLE'} tone={active ? 'amber' : 'neutral'} />
+          <Small tone="muted">Pay once. Every calculator, forever.</Small>
         </View>
+        <Pill label={available ? 'PAY ONCE' : 'UNAVAILABLE'} tone={available ? 'amber' : 'neutral'} />
+      </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 15 }}>
-          <Display style={{ fontSize: 30, lineHeight: 38 }}>{plan.price}</Display>
-          <Label tone="muted" style={{ marginBottom: 7 }}>{plan.cadence}</Label>
-        </View>
-        <Small tone="muted" style={{ marginTop: 2 }}>{plan.detail}</Small>
-      </Panel>
-    </Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 15 }}>
+        <Display style={{ fontSize: compact ? 28 : 32, lineHeight: compact ? 36 : 40 }}>{price}</Display>
+        <Label tone="muted" style={{ marginBottom: 7 }}>one time</Label>
+      </View>
+      <Small tone="muted" style={{ marginTop: 2 }}>No subscription. No renewal. Ever.</Small>
+    </Panel>
   );
 }
 
@@ -262,20 +187,17 @@ export function PaywallScreen() {
   const [loading, setLoading] = useState(false);
   const [storefront, setStorefront] = useState<SubscriptionStorefront | null>(null);
   const [offeringsChecked, setOfferingsChecked] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>('yearly');
   const operationInFlight = useRef(false);
   const purchasesEnabled = isRevenueCatConfigured();
-  const storefrontReady = storefront ? SubscriptionService.isStorefrontReady(storefront) : false;
-  const plans = useMemo(() => buildPlans(storefront), [storefront]);
-  const selectedPlanAvailable = storefront
-    ? SubscriptionService.isPlanAvailable(storefront, selectedPlan)
-    : false;
+  const lifetimeProduct = lifetimeProductFrom(storefront);
+  const lifetimeAvailable = lifetimeProduct !== null;
+  const lifetimePrice = lifetimeProduct?.priceString ?? 'Unavailable';
   const checkoutLoading = purchasesEnabled && !offeringsChecked;
   const storeStatus: StoreStatus = !purchasesEnabled
     ? { label: 'Store setup needed', tone: 'fail' }
     : checkoutLoading
       ? { label: 'Checking store', tone: 'info' }
-      : storefrontReady
+      : lifetimeAvailable
         ? { label: 'Store checkout', tone: 'pass' }
         : { label: 'Store products unavailable', tone: 'fail' };
 
@@ -310,12 +232,6 @@ export function PaywallScreen() {
     };
   }, [purchasesEnabled]);
 
-  useEffect(() => {
-    if (!storefront) return;
-    const availablePlan = SubscriptionService.selectAvailablePlan(storefront, selectedPlan);
-    if (availablePlan && availablePlan !== selectedPlan) setSelectedPlan(availablePlan);
-  }, [selectedPlan, storefront]);
-
   const beginStoreOperation = () => {
     if (operationInFlight.current) return false;
     operationInFlight.current = true;
@@ -342,16 +258,16 @@ export function PaywallScreen() {
       );
       return;
     }
-    if (!storefront || !SubscriptionService.isPlanAvailable(storefront, selectedPlan)) {
-      Alert.alert('Selected plan unavailable', 'That plan was not returned by the store. Select an available plan or try again later.');
+    if (!lifetimeAvailable) {
+      Alert.alert('Lifetime Pro unavailable', 'Lifetime Pro was not returned by the store. Try again later.');
       return;
     }
     if (!beginStoreOperation()) return;
     try {
-      const success = await SubscriptionService.purchase(selectedPlan);
+      const success = await SubscriptionService.purchase('lifetime');
       if (success) {
         setPro(true);
-        Alert.alert('Welcome to Pro', 'Every BaseCalc HVAC calculator is unlocked on this device.');
+        Alert.alert('Welcome to Pro', 'Every BaseCalc HVAC calculator is unlocked on this device, for life.');
         closePaywall();
       }
     } catch (error) {
@@ -375,10 +291,10 @@ export function PaywallScreen() {
       const active = await SubscriptionService.restorePurchases();
       setPro(active);
       if (active) {
-        Alert.alert('Restored', 'Your Pro subscription is active.');
+        Alert.alert('Restored', 'Your BaseCalc HVAC Pro access is active.');
         closePaywall();
       } else {
-        Alert.alert('No subscription found', 'We could not find an active BaseCalc HVAC Pro subscription.');
+        Alert.alert('No purchase found', 'We could not find an active BaseCalc HVAC Pro purchase or subscription for this account.');
       }
     } catch (error) {
       Alert.alert('Restore failed', errorMessage(error));
@@ -402,7 +318,7 @@ export function PaywallScreen() {
             </View>
             <Display style={{ textAlign: 'center' }}>Pro is active</Display>
             <Body tone="muted" style={{ textAlign: 'center', marginTop: 8, maxWidth: 320 }}>
-              Every HVAC calculator and the expanded local record limits are unlocked while the subscription is active.
+              Every HVAC calculator and the expanded local record limits are unlocked on this device.
             </Body>
           </View>
         </ScrollView>
@@ -428,20 +344,19 @@ export function PaywallScreen() {
             BaseCalc HVAC Pro
           </Display>
           <Body tone="muted" style={{ marginTop: 8, fontSize: compact ? 14.5 : undefined, lineHeight: compact ? 22 : undefined }}>
-            Get the full job-site calculator set HVAC techs use after the core free checks.
+            Pay once. Unlock the full job-site calculator set for good.
           </Body>
         </Panel>
 
-        <View style={{ gap: 12, marginBottom: 14 }}>
-          <PlanCard plan={plans.yearly} active={selectedPlan === 'yearly'} loading={loading} onSelect={() => setSelectedPlan('yearly')} />
-          <PlanCard plan={plans.monthly} active={selectedPlan === 'monthly'} loading={loading} onSelect={() => setSelectedPlan('monthly')} />
+        <View style={{ marginBottom: 14 }}>
+          <LifetimeCard price={lifetimePrice} available={lifetimeAvailable} compact={compact} />
         </View>
 
         <PrimaryButton
-          label={loading ? `Opening ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'}` : selectedPlanAvailable ? plans[selectedPlan].cta : 'Selected plan unavailable'}
+          label={loading ? `Opening ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'}` : lifetimeAvailable ? `Get Lifetime Pro — ${lifetimePrice}` : 'Lifetime Pro unavailable'}
           icon="workspace-premium"
           loading={loading}
-          disabled={loading || !selectedPlanAvailable}
+          disabled={loading || !lifetimeAvailable}
           onPress={purchase}
         />
 
@@ -449,8 +364,12 @@ export function PaywallScreen() {
           <SecondaryButton label="Restore purchases" icon="restore" disabled={loading} onPress={restore} />
         </View>
 
-        <Small tone="muted" style={{ textAlign: 'center', marginTop: 18 }}>
-          Monthly provides one month and yearly provides one year of BaseCalc HVAC Pro access. Payment is charged to your store account. Subscriptions auto-renew unless cancelled at least 24 hours before the current period ends. Manage or cancel in your App Store or Google Play account settings.
+        <Small tone="muted" style={{ textAlign: 'center', marginTop: 14 }}>
+          Already have a BaseCalc HVAC Pro subscription? Tap Restore purchases — your active monthly or yearly subscription still unlocks Pro and keeps renewing as before.
+        </Small>
+
+        <Small tone="muted" style={{ textAlign: 'center', marginTop: 12 }}>
+          Lifetime Pro is a one-time payment charged once to your store account. It never renews and cannot expire. Manage past purchases in your App Store or Google Play account settings.
         </Small>
 
         <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', columnGap: 16, rowGap: 8, marginTop: 10 }}>
