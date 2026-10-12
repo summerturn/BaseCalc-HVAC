@@ -61,8 +61,9 @@ DEVICE-LOCAL FOR THE FIELD
 • Works offline by default.
 • No BaseCalc account or cloud sync.
 • Job contacts, worksheets, settings, and calculation history use the app's local storage.
-• Subscription status is checked through RevenueCat; exports leave the app only when you choose to share them.
+• Purchase status is checked through RevenueCat; exports leave the app only when you choose to share them.
 • No third-party advertising SDK or third-party ads in this release.
+• Lifetime Pro is a one-time purchase; prior monthly and yearly subscriptions remain valid and restorable.
 • Dark and light themes with a high-contrast job-site interface.
 
 BaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.
