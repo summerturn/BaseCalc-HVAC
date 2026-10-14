@@ -139,7 +139,8 @@ function CalcCard({
         base,
         {
           width: cardWidth,
-          height: cardHeight,
+          height: large ? cardHeight : undefined,
+          minHeight: large ? undefined : cardHeight,
           justifyContent: 'space-between',
           opacity: pressed ? 0.85 : 1,
         },
@@ -151,7 +152,9 @@ function CalcCard({
           paddingHorizontal: large ? 22 : compact ? 14 : 16,
           paddingTop: large ? 22 : compact ? 13 : 14,
           paddingBottom: large ? 22 : compact ? 14 : 16,
-          flex: 1,
+          flex: large ? 1 : undefined,
+          flexGrow: large ? undefined : 1,
+          flexShrink: large ? undefined : 0,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -161,9 +164,7 @@ function CalcCard({
           <View style={{ marginTop: large ? 16 : 12, width: '100%', alignItems: 'center' }}>
             <H2
               style={{ fontSize: large ? 21 : compact ? 15 : 16, textAlign: 'center', width: '100%' }}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.9}
+              numberOfLines={large ? 2 : undefined}
             >
               {calc.title}
             </H2>
@@ -176,7 +177,7 @@ function CalcCard({
               {calc.subtitle}
             </Small>
           </View>
-          <Label tone="muted" style={{ marginTop: large ? 14 : 10, textAlign: 'center', width: '100%' }} numberOfLines={1}>
+          <Label tone="muted" style={{ marginTop: large ? 14 : 10, textAlign: 'center', width: '100%' }} numberOfLines={large ? 2 : undefined}>
             {calc.code}
           </Label>
         </View>
@@ -274,7 +275,9 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
   );
   const gridWidth = cardWidth * columns + cardGap * (columns - 1);
   const rawCardHeight = Math.round(cardWidth * (isTablet ? 1.03 : compact ? 1.18 : 1.12));
-  const cardHeight = Math.max(compact ? 168 : 176, Math.min(isTablet ? 230 : 214, rawCardHeight));
+  const cardHeight = isTablet
+    ? Math.max(176, Math.min(230, rawCardHeight))
+    : Math.max(220, Math.min(230, rawCardHeight));
   const rows = chunk(CALCS, columns);
   const openCalculator = (calc: CalcDef) => {
     if (calc.proOnly && !isPro) {
@@ -300,11 +303,11 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
         showsVerticalScrollIndicator={false}
       >
         <View style={{ marginTop: 6, marginBottom: 26 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <View style={{ backgroundColor: c.amberSoft, borderColor: withAlpha(c.amberBright, 0.4), borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 10, marginBottom: 16 }}>
+            <View style={{ maxWidth: '100%', backgroundColor: c.amberSoft, borderColor: withAlpha(c.amberBright, 0.4), borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
               <Label tone="amber">HVAC Field Toolkit</Label>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 'auto' }}>
               <View style={{ width: 7, height: 7, borderRadius: 7, backgroundColor: c.pass, shadowColor: c.pass, shadowOpacity: 0.9, shadowRadius: 5 }} />
               <Mono tone="muted" style={{ fontSize: 11 }}>LIVE</Mono>
             </View>
@@ -332,7 +335,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
                 style={{
                   flexDirection: 'row',
                   justifyContent: row.length === columns ? 'space-between' : 'center',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   marginBottom: cardGap,
                   width: '100%',
                 }}
