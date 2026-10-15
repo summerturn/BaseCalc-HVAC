@@ -100,7 +100,7 @@ function CalcCard({
   locked?: boolean;
 }) {
   const c = useColors();
-  const contentColumnWidth = Math.max(96, Math.min(cardWidth - 28, large ? 170 : compact ? 118 : 136));
+  const contentColumnWidth = Math.max(96, Math.min(cardWidth - 28, cardWidth >= 400 ? cardWidth - 44 : large ? 170 : compact ? 118 : 136));
   const showProText = Boolean(locked && !compact && cardWidth >= 176);
   const badgeSide = compact ? 26 : 28;
   const base = {
@@ -139,8 +139,7 @@ function CalcCard({
         base,
         {
           width: cardWidth,
-          height: large ? cardHeight : undefined,
-          minHeight: large ? undefined : cardHeight,
+          minHeight: cardHeight,
           justifyContent: 'space-between',
           opacity: pressed ? 0.85 : 1,
         },
@@ -152,9 +151,8 @@ function CalcCard({
           paddingHorizontal: large ? 22 : compact ? 14 : 16,
           paddingTop: large ? 22 : compact ? 13 : 14,
           paddingBottom: large ? 22 : compact ? 14 : 16,
-          flex: large ? 1 : undefined,
-          flexGrow: large ? undefined : 1,
-          flexShrink: large ? undefined : 0,
+          flexGrow: 1,
+          flexShrink: 0,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -164,7 +162,6 @@ function CalcCard({
           <View style={{ marginTop: large ? 16 : 12, width: '100%', alignItems: 'center' }}>
             <H2
               style={{ fontSize: large ? 21 : compact ? 15 : 16, textAlign: 'center', width: '100%' }}
-              numberOfLines={large ? 2 : undefined}
             >
               {calc.title}
             </H2>
@@ -177,7 +174,7 @@ function CalcCard({
               {calc.subtitle}
             </Small>
           </View>
-          <Label tone="muted" style={{ marginTop: large ? 14 : 10, textAlign: 'center', width: '100%' }} numberOfLines={large ? 2 : undefined}>
+          <Label tone="muted" style={{ marginTop: large ? 14 : 10, textAlign: 'center', width: '100%' }}>
             {calc.code}
           </Label>
         </View>
@@ -263,21 +260,23 @@ function BrandLockup({ compact }: { compact: boolean }) {
 export function CalculatorDashboardScreen({ navigation }: { navigation: { navigate: (s: string) => void } }) {
   const c = useColors();
   const { isPro } = useAppStore();
-  const { width } = useWindowDimensions();
+  const { width, height, fontScale } = useWindowDimensions();
   const bottomClearance = useBottomClearance();
   const isTablet = width >= TABLET_BREAKPOINT;
-  const compact = width < 390;
-  const columns = width >= 1180 ? 4 : isTablet ? 3 : 2;
+  const wideCards = width >= 600;
+  const compact = width < 500;
+  const shortViewport = height < 760;
+  const columns = fontScale >= 1.6 ? 1 : width >= 1180 ? 4 : isTablet ? 3 : 2;
   const cardGap = compact ? 12 : 14;
   const availableGridWidth = Math.max(0, width - SCREEN_H_PAD * 2);
   const cardWidth = Math.floor(
     (availableGridWidth - cardGap * (columns - 1)) / columns
   );
   const gridWidth = cardWidth * columns + cardGap * (columns - 1);
-  const rawCardHeight = Math.round(cardWidth * (isTablet ? 1.03 : compact ? 1.18 : 1.12));
-  const cardHeight = isTablet
+  const rawCardHeight = Math.round(cardWidth * (wideCards ? 1.03 : compact ? 1.18 : 1.12));
+  const cardHeight = wideCards
     ? Math.max(176, Math.min(230, rawCardHeight))
-    : Math.max(220, Math.min(230, rawCardHeight));
+    : Math.max(shortViewport ? 190 : 220, Math.min(shortViewport ? 210 : 230, rawCardHeight));
   const rows = chunk(CALCS, columns);
   const openCalculator = (calc: CalcDef) => {
     if (calc.proOnly && !isPro) {
@@ -302,8 +301,8 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
         contentContainerStyle={{ paddingHorizontal: SCREEN_H_PAD, paddingTop: SCREEN_TOP_PAD + 2, paddingBottom: bottomClearance, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ marginTop: 6, marginBottom: 26 }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 10, marginBottom: 16 }}>
+        <View style={{ marginTop: shortViewport ? 2 : 6, marginBottom: shortViewport ? 14 : 26 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 10, marginBottom: shortViewport ? 10 : 16 }}>
             <View style={{ maxWidth: '100%', backgroundColor: c.amberSoft, borderColor: withAlpha(c.amberBright, 0.4), borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
               <Label tone="amber">HVAC Field Toolkit</Label>
             </View>
@@ -348,7 +347,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
                     <CalcCard
                       calc={calc}
                       compact={compact}
-                      large={isTablet}
+                      large={wideCards}
                       cardWidth={cardWidth}
                       cardHeight={cardHeight}
                       locked={Boolean(calc.proOnly && !isPro)}

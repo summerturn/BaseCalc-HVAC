@@ -182,7 +182,7 @@ export function PaywallScreen() {
   const c = useColors();
   const bottomClearance = useBottomClearance();
   const { width } = useWindowDimensions();
-  const compact = width < 390;
+  const compact = width < 500;
   const { isPro, setPro } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [storefront, setStorefront] = useState<SubscriptionStorefront | null>(null);
