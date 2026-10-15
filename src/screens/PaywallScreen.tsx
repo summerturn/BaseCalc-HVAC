@@ -59,6 +59,7 @@ const PRO_ACCESS: AccessSection = {
     'Psychrometrics and mixed air',
     'Manufacturer-data refrigerant checks',
     'Planning load, hydronics, outdoor airflow',
+    'Complete job report and worksheet templates',
   ],
 };
 
@@ -66,7 +67,8 @@ const PRO_FEATURES = [
   'Unlock every HVAC calculator in the app',
   'Keep the four most-used airflow and capacity checks free',
   'Unlimited local job contacts and open worksheets',
-  'Keep local job history, contacts, and worksheets available in the app',
+  'Export complete job reports with saved calculation inputs and results',
+  'Reuse worksheet work items and notes with templates',
   'Pay once — no recurring charge, ever',
 ];
 
@@ -163,7 +165,7 @@ function LifetimeCard({ price, available, compact }: { price: string; available:
             <MaterialIcons name="workspace-premium" size={20} color={available ? c.amberBright : c.textMuted} />
             <H2 numberOfLines={1}>Lifetime Pro</H2>
           </View>
-          <Small tone="muted">Pay once. Every calculator, forever.</Small>
+          <Small tone="muted">Pay once. Every calculator, job report, and template.</Small>
         </View>
         <Pill label={available ? 'PAY ONCE' : 'UNAVAILABLE'} tone={available ? 'amber' : 'neutral'} />
       </View>
@@ -267,7 +269,7 @@ export function PaywallScreen() {
       const success = await SubscriptionService.purchase('lifetime');
       if (success) {
         setPro(true);
-        Alert.alert('Welcome to Pro', 'Every BaseCalc HVAC calculator is unlocked on this device, for life.');
+        Alert.alert('Welcome to Pro', 'Every BaseCalc HVAC calculator, complete job report, and worksheet template is unlocked on this device.');
         closePaywall();
       }
     } catch (error) {
@@ -318,7 +320,7 @@ export function PaywallScreen() {
             </View>
             <Display style={{ textAlign: 'center' }}>Pro is active</Display>
             <Body tone="muted" style={{ textAlign: 'center', marginTop: 8, maxWidth: 320 }}>
-              Every HVAC calculator and the expanded local record limits are unlocked on this device.
+              Every HVAC calculator, complete job reports, reusable templates, and expanded local record limits are unlocked on this device.
             </Body>
           </View>
         </ScrollView>
@@ -344,7 +346,7 @@ export function PaywallScreen() {
             BaseCalc HVAC Pro
           </Display>
           <Body tone="muted" style={{ marginTop: 8, fontSize: compact ? 14.5 : undefined, lineHeight: compact ? 22 : undefined }}>
-            Pay once. Unlock the full job-site calculator set for good.
+            Pay once. Unlock every HVAC calculator, complete job reports, and reusable worksheet templates.
           </Body>
         </Panel>
 

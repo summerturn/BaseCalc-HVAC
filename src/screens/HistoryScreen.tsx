@@ -35,6 +35,8 @@ const typeLabels: Record<string, string> = {
   combustionAnalysis: 'Combustion Analysis',
   refrigerantWeight: 'Refrigerant Weight',
   economizer: 'Economizer',
+  ductLeakage: 'Airflow Difference',
+  heatRecovery: 'Heat Recovery',
 };
 
 const typeColors: Record<string, string> = {
@@ -56,6 +58,8 @@ const typeColors: Record<string, string> = {
   combustionAnalysis: CATEGORY.general,
   refrigerantWeight: CATEGORY.refrigerant,
   economizer: CATEGORY.airflow,
+  ductLeakage: CATEGORY.duct,
+  heatRecovery: CATEGORY.efficiency,
 };
 
 export function HistoryScreen() {

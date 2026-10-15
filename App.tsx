@@ -30,6 +30,8 @@ import {
   CombustionAnalysisScreen,
   RefrigerantWeightScreen,
   EconomizerScreen,
+  DuctLeakageScreen,
+  HeatRecoveryScreen,
 } from './src/screens/CalculatorScreens';
 import { ClientsScreen, AddClientScreen, EditClientScreen, ClientDetailScreen } from './src/screens/ClientsScreen';
 import { JobTicketsScreen, CreateJobTicketScreen, JobTicketDetailScreen } from './src/screens/InvoicesScreen';
@@ -83,6 +85,8 @@ function CalculatorStack() {
           <Stack.Screen name="CombustionAnalysis" component={CombustionAnalysisScreen} />
           <Stack.Screen name="RefrigerantWeight" component={RefrigerantWeightScreen} />
           <Stack.Screen name="Economizer" component={EconomizerScreen} />
+          <Stack.Screen name="DuctLeakage" component={DuctLeakageScreen} />
+          <Stack.Screen name="HeatRecovery" component={HeatRecoveryScreen} />
         </>
       ) : null}
     </Stack.Navigator>

@@ -136,13 +136,13 @@ export function JobTicketsScreen({ navigation }: { navigation: any }) {
 // ─── Create ──────────────────────────────────────────────────────────
 
 export function CreateJobTicketScreen({ route, navigation }: { route: any; navigation: any }) {
-  const { clients, addInvoice, generateInvoiceNumber } = useAppStore();
+  const { clients, templates, isPro, addInvoice, generateInvoiceNumber } = useAppStore();
   const { showLimitPrompt } = useSubscription();
   const c = useColors();
   const bottomClearance = useBottomClearance();
 
   const [clientId, setClientId] = useState(route.params?.clientId || '');
-  const [lineItems, setLineItems] = useState([InvoiceService.createLineItem('Electrical work item', 1, 0)]);
+  const [lineItems, setLineItems] = useState([InvoiceService.createLineItem('', 1, 0)]);
   const [notes, setNotes] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -193,6 +193,25 @@ export function CreateJobTicketScreen({ route, navigation }: { route: any; navig
       <FormScrollView bottomPadding={bottomClearance + 24}>
         <BackBar onBack={() => navigation.goBack()} />
         <View style={{ marginBottom: 18 }}><Display>New Job Worksheet</Display></View>
+        <Label style={{ marginBottom: 8 }}>Start from a template</Label>
+        <Panel style={{ marginBottom: 16 }}>
+          {!isPro ? (
+            <Pressable onPress={() => navigation.navigate('Paywall')}>
+              <Body tone="dim">Reusable worksheet templates are included with Pro.</Body>
+              <Label tone="amber" style={{ marginTop: 8 }}>View Pro</Label>
+            </Pressable>
+          ) : templates.length === 0 ? (
+            <Body tone="muted">Save a completed worksheet as a template to reuse its work items and notes.</Body>
+          ) : templates.map((template) => (
+            <Pressable key={template.id} onPress={() => {
+              setLineItems(template.lineItems.map((item) => InvoiceService.createLineItem(item.description, item.quantity, 0)));
+              setNotes(template.notes);
+            }} style={{ paddingVertical: 8 }}>
+              <Label tone="amber">{template.name}</Label>
+              <Small tone="muted">{template.lineItems.length} items</Small>
+            </Pressable>
+          ))}
+        </Panel>
 
         <Label style={{ marginBottom: 8, }}>Job contact</Label>
         <Panel style={{ marginBottom: 16 }}>
@@ -281,12 +300,13 @@ export function CreateJobTicketScreen({ route, navigation }: { route: any; navig
 
 export function JobTicketDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const { invoiceId } = route.params;
-  const { invoices, clients, company, updateInvoice, deleteInvoice } = useAppStore();
+  const { invoices, clients, calculations, company, isPro, addTemplate, templates, deleteTemplate, updateInvoice, deleteInvoice } = useAppStore();
   const c = useColors();
   const bottomClearance = useBottomClearance();
   const invoice = invoices.find((i) => i.id === invoiceId);
   const client = clients.find((cl) => cl.id === invoice?.clientId);
   const [generating, setGenerating] = useState(false);
+  const [templateName, setTemplateName] = useState('');
 
   if (!invoice) {
     return (
@@ -303,7 +323,8 @@ export function JobTicketDetailScreen({ route, navigation }: { route: any; navig
     const previousPath = invoice.pdfPath;
     setGenerating(true);
     try {
-      const path = await InvoiceService.generatePDF(invoice, company, client?.name || 'Unknown job contact');
+      const attached = isPro ? calculations.filter((calc) => invoice.calculationIds?.includes(calc.id)) : [];
+      const path = await InvoiceService.generatePDF(invoice, company, client?.name || 'Unknown job contact', attached, isPro);
       if (!path) {
         Alert.alert('Error', 'Could not generate the PDF.');
         return;
@@ -316,10 +337,12 @@ export function JobTicketDetailScreen({ route, navigation }: { route: any; navig
       if (previousPath && previousPath !== path) {
         InvoiceService.deletePDF(previousPath);
       }
-      Alert.alert('PDF ready', 'Job worksheet PDF generated.', [
+      Alert.alert('PDF ready', isPro ? 'Complete job report PDF generated.' : 'Job worksheet PDF generated.', [
         { text: 'Share', onPress: () => InvoiceService.sharePDF(path) },
         { text: 'Done', style: 'cancel' },
       ]);
+    } catch {
+      Alert.alert('Export failed', 'The PDF could not be generated or saved.');
     } finally {
       setGenerating(false);
     }
@@ -400,6 +423,65 @@ export function JobTicketDetailScreen({ route, navigation }: { route: any; navig
           </Panel>
         ) : null}
 
+        <Panel style={{ marginBottom: 14 }}>
+          <Label style={{ marginBottom: 8 }}>Calculation history in report</Label>
+          {!isPro ? (
+            <>
+              <Body tone="dim" style={{ marginBottom: 10 }}>The free worksheet PDF includes work items and notes. Pro adds selected saved calculation inputs and results to a complete job report.</Body>
+              <SecondaryButton label="View Pro report" icon="workspace-premium" onPress={() => navigation.navigate('Paywall')} />
+            </>
+          ) : calculations.length === 0 ? (
+            <Body tone="muted">Run a calculator to save a result, then select it here.</Body>
+          ) : (
+            [...calculations].reverse().map((calc) => {
+              const selected = invoice.calculationIds?.includes(calc.id) ?? false;
+              return (
+                <Pressable key={calc.id} onPress={() => updateInvoice(invoice.id, {
+                  calculationIds: selected
+                    ? (invoice.calculationIds ?? []).filter((id) => id !== calc.id)
+                    : [...(invoice.calculationIds ?? []), calc.id],
+                })} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}>
+                  <MaterialIcons name={selected ? 'check-box' : 'check-box-outline-blank'} size={22} color={c.amber} />
+                  <View style={{ flex: 1 }}>
+                    <Body tone="dim">{calc.type}</Body>
+                    <Small tone="muted">{new Date(calc.createdAt).toLocaleString()}</Small>
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
+        </Panel>
+
+        <Panel style={{ marginBottom: 14 }}>
+          <Label style={{ marginBottom: 8 }}>Reusable template</Label>
+          {!isPro ? (
+            <SecondaryButton label="Unlock templates with Pro" icon="workspace-premium" onPress={() => navigation.navigate('Paywall')} />
+          ) : (
+            <>
+              <Field label="Template name" value={templateName} onChangeText={setTemplateName} placeholder="e.g. Seasonal service" />
+              <SecondaryButton label="Save this worksheet as template" icon="save" onPress={() => {
+                if (!templateName.trim()) {
+                  Alert.alert('Name required', 'Enter a name for this template.');
+                  return;
+                }
+                addTemplate(templateName, invoice);
+                setTemplateName('');
+              }} />
+              {templates.map((template) => (
+                <View key={template.id} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                  <Body tone="dim" style={{ flex: 1 }}>{template.name}</Body>
+                  <Pressable onPress={() => Alert.alert('Delete template?', template.name, [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Delete', style: 'destructive', onPress: () => deleteTemplate(template.id) },
+                  ])} hitSlop={8}>
+                    <MaterialIcons name="delete-outline" size={21} color={c.fail} />
+                  </Pressable>
+                </View>
+              ))}
+            </>
+          )}
+        </Panel>
+
         <Panel style={{ marginBottom: 16 }}>
           <Label style={{ marginBottom: 8 }}>SpeakSheet handoff</Label>
           <Body tone="dim" style={{ marginBottom: 12 }}>
@@ -415,7 +497,7 @@ export function JobTicketDetailScreen({ route, navigation }: { route: any; navig
           <SecondaryButton label="Review" icon="warning" tint={c.fail} onPress={() => updateInvoice(invoice.id, { status: 'overdue' })} />
         </View>
 
-        <PrimaryButton label={generating ? 'Generating...' : 'Export worksheet PDF'} icon="picture-as-pdf" loading={generating} onPress={handlePDF} />
+        <PrimaryButton label={generating ? 'Generating...' : isPro ? 'Export complete job report PDF' : 'Export worksheet PDF'} icon="picture-as-pdf" loading={generating} onPress={handlePDF} />
         <View style={{ marginTop: 12 }}>
           <SecondaryButton label="Delete worksheet" icon="delete-outline" tint={c.fail} onPress={confirmDelete} disabled={generating} />
         </View>

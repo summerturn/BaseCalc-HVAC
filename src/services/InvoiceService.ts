@@ -1,4 +1,4 @@
-import { Invoice, InvoiceLineItem, CompanySettings } from '../store/useAppStore';
+import { Invoice, InvoiceLineItem, CompanySettings, CalculationRecord } from '../store/useAppStore';
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -15,7 +15,7 @@ function escapeHtml(value: string | number | undefined | null): string {
     .replace(/'/g, '&#039;');
 }
 
-function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientName: string): string {
+export function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientName: string, calculations: CalculationRecord[] = [], completeReport = false): string {
   const worksheetNumber = invoice.invoiceNumber.replace(/^INV-/, 'JOB-');
   const lineItemsHTML = invoice.lineItems.map((item, index) => `
     <div class="work-row">
@@ -29,6 +29,25 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
 
   const status = invoice.status;
   const statusLabel = status === 'paid' ? 'closed' : status === 'sent' ? 'ready' : status === 'overdue' ? 'review' : 'draft';
+  const calculationHTML = calculations.map((calc, index) => {
+    const calculationTitle = calc.type === 'ductLeakage' ? 'Airflow Difference'
+      : calc.type === 'heatRecovery' ? 'Heat Recovery'
+        : calc.type.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (letter) => letter.toUpperCase());
+    const inputs = Object.entries(calc.inputs ?? {}).map(([key, value]) =>
+      `<li><strong>${escapeHtml(key)}:</strong> ${escapeHtml(String(value ?? ''))}</li>`).join('');
+    const result = calc.result as { message?: unknown; fields?: unknown; details?: unknown };
+    const fields = Array.isArray(result.fields) ? result.fields.filter((field): field is { label: string; value: string; unit?: string } =>
+      typeof field === 'object' && field !== null && 'label' in field && 'value' in field
+      && typeof field.label === 'string' && typeof field.value === 'string') : [];
+    const details = Array.isArray(result.details) ? result.details.filter((detail): detail is string => typeof detail === 'string') : [];
+    return `<div class="calculation">
+      <h4>${index + 1}. ${escapeHtml(calculationTitle)} · ${escapeHtml(new Date(calc.createdAt).toLocaleString())}</h4>
+      <p>${escapeHtml(typeof result.message === 'string' ? result.message : '')}</p>
+      <div><strong>Inputs</strong><ul>${inputs}</ul></div>
+      <div><strong>Results</strong><ul>${fields.map((field) => `<li>${escapeHtml(field.label)}: ${escapeHtml(field.value)} ${escapeHtml(field.unit)}</li>`).join('')}</ul></div>
+      ${details.length ? `<div><strong>Method and limits</strong><ul>${details.map((detail) => `<li>${escapeHtml(detail)}</li>`).join('')}</ul></div>` : ''}
+    </div>`;
+  }).join('');
 
   return `
 <!DOCTYPE html>
@@ -69,6 +88,11 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
     .handoff { margin-top: 20px; padding: 16px; background: #FFFBEB; border-radius: 8px; border-left: 4px solid #D97706; }
     .handoff p { font-size: 13px; color: #92400E; }
     .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #9ca3af; }
+    .calculation { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin: 10px 0; break-inside: avoid; }
+    .calculation h4 { font-size: 14px; margin-bottom: 8px; }
+    .calculation p, .calculation li { font-size: 12px; color: #374151; }
+    .calculation ul { margin: 4px 0 10px 18px; }
+    @page { margin: 20px; }
   </style>
 </head>
 <body>
@@ -85,7 +109,7 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
             <p>${escapeHtml(company.email)}</p>
           </div>
           <div class="ticket-meta">
-            <h2>JOB WORKSHEET</h2>
+            <h2>${completeReport ? 'JOB REPORT' : 'JOB WORKSHEET'}</h2>
             <p><strong>${escapeHtml(worksheetNumber)}</strong></p>
             <p>Date: ${new Date(invoice.date).toLocaleDateString()}</p>
             <span class="status-badge status-${status}">${statusLabel}</span>
@@ -97,10 +121,12 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
           <p><strong>${escapeHtml(clientName)}</strong></p>
         </div>
 
-        <div class="section-title">Work Items</div>
+        <div class="section-title">Work Items and Materials</div>
         <div class="work-list">
           ${lineItemsHTML || '<div class="work-row"><div class="check-cell">1</div><div class="work-copy"><p class="work-title">No work items entered</p><p class="work-meta">Quantity: 0</p></div></div>'}
         </div>
+
+        ${completeReport ? `<div class="section-title">Saved Calculation History</div>${calculationHTML || '<p>No calculations selected for this report.</p>'}` : ''}
 
         ${invoice.notes ? `
         <div class="notes-section">
@@ -114,7 +140,7 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
         </div>
 
         <div class="footer">
-          <p>Job worksheet only. No prices, tax, or payment terms are stored here.</p>
+          <p>${completeReport ? 'Job report' : 'Job worksheet'} only. No prices, tax, or payment terms are stored here.</p>
           <p style="margin-top: 4px; color: #D97706; font-weight: 600;">Generated with BaseCalc HVAC</p>
         </div>
       </div>
@@ -128,10 +154,10 @@ function generateInvoiceHTML(invoice: Invoice, company: CompanySettings, clientN
 // ─── PDF Service ─────────────────────────────────────────────────────
 
 export const InvoiceService = {
-  async generatePDF(invoice: Invoice, company: CompanySettings, clientName: string): Promise<string | null> {
+  async generatePDF(invoice: Invoice, company: CompanySettings, clientName: string, calculations: CalculationRecord[] = [], completeReport = false): Promise<string | null> {
     let temporaryFile: File | null = null;
     try {
-      const html = generateInvoiceHTML(invoice, company, clientName);
+      const html = generateInvoiceHTML(invoice, company, clientName, calculations, completeReport);
 
       if (Platform.OS === 'web') {
         // On web, create a blob and download

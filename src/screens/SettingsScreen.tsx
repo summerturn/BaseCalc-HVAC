@@ -1,8 +1,9 @@
 import { type ComponentProps, useState } from 'react';
-import { Pressable, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
+import { BackupService, type BackupData } from '../services/BackupService';
 import { useAppTheme, useColors } from '../theme/useAppTheme';
 import type { ThemeMode } from '../theme/appTheme';
 import { Body, Label, Mono, Small } from '../components/Type';
@@ -39,19 +40,71 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { company, updateCompany, isPro } = useAppStore();
+  const { company, updateCompany, restoreLocalData, isPro } = useAppStore();
   const { themeMode, setThemeMode } = useAppTheme();
   const c = useColors();
   const { width } = useWindowDimensions();
   const bottomClearance = useBottomClearance();
   const [form, setForm] = useState({ ...company });
   const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
   const stackLocationFields = width < 360;
 
   const handleSave = () => {
     updateCompany(form);
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
+  };
+
+  const exportBackup = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await BackupService.export();
+    } catch (error) {
+      Alert.alert('Export failed', error instanceof Error ? error.message : 'Could not export the backup.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restoreBackup = async () => {
+    if (busy) return;
+    setBusy(true);
+    let awaitingConfirmation = false;
+    try {
+      const backup: BackupData | null = await BackupService.pickAndValidate();
+      if (!backup) return;
+      awaitingConfirmation = true;
+      let decisionSelected = false;
+      Alert.alert('Replace local records?', `This backup contains ${backup.clients.length} contacts, ${backup.invoices.length} worksheets, and ${backup.calculations.length} calculations. It will replace the current local records. Subscription access stays linked to your store account.`, [
+        { text: 'Cancel', style: 'cancel', onPress: () => {
+          decisionSelected = true;
+          setBusy(false);
+        } },
+        { text: 'Replace records', style: 'destructive', onPress: async () => {
+          decisionSelected = true;
+          try {
+            await restoreLocalData(backup);
+            setForm({ ...backup.company });
+            Alert.alert('Restore complete', 'Local job records have been replaced.');
+          } catch {
+            Alert.alert('Restore failed', 'Could not save the backup on this device. Current local records were kept.');
+          } finally {
+            setBusy(false);
+          }
+        } },
+      ], {
+        cancelable: true,
+        onDismiss: () => {
+          if (!decisionSelected) setBusy(false);
+        },
+      });
+    } catch (error) {
+      Alert.alert('Restore failed', error instanceof Error ? error.message : 'Could not read the backup.');
+    } finally {
+      if (!awaitingConfirmation) setBusy(false);
+    }
   };
 
   return (
@@ -118,6 +171,15 @@ export function SettingsScreen() {
         </Section>
 
         <PrimaryButton label={saved ? 'Saved ✓' : 'Save settings'} icon={saved ? undefined : 'save'} onPress={handleSave} />
+        <Section title="Backup and device transfer">
+          <Panel>
+            <Body tone="dim" style={{ marginBottom: 12 }}>Export a local JSON backup to a location you choose. Restore replaces contacts, worksheets, calculation history, templates, and company details on this device.</Body>
+            <PrimaryButton label={busy ? 'Working…' : 'Export backup'} icon="ios-share" disabled={busy} onPress={exportBackup} />
+            <View style={{ marginTop: 10 }}>
+              <PrimaryButton label="Restore backup" icon="file-upload" disabled={busy} onPress={restoreBackup} />
+            </View>
+          </Panel>
+        </Section>
         <Small style={{ textAlign: 'center', marginTop: 18 }}>BaseCalc HVAC v1.0 · HVAC field reference</Small>
         <Small tone="muted" style={{ textAlign: 'center', marginTop: 10 }}>
           Job contacts, worksheets, calculations, and company settings use this app's local storage. Subscription status is checked with RevenueCat; exports leave the app only when you choose to share them.

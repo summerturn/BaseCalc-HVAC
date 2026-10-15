@@ -70,6 +70,8 @@ const CALCS: CalcDef[] = [
   { key: 'combustion', title: 'O₂ Excess Air', subtitle: 'Dilution estimate only', icon: 'fireplace', code: 'O₂ ÷ (20.9 − O₂)', route: 'CombustionAnalysis', color: CATEGORY.general, proOnly: true },
   { key: 'charge', title: 'Refrigerant Weight', subtitle: 'Manufacturer charge rate', icon: 'scale', code: 'Additional oz', route: 'RefrigerantWeight', color: CATEGORY.refrigerant, proOnly: true },
   { key: 'economizer', title: 'Outdoor Airflow', subtitle: 'Supplied-rate Vbz', icon: 'cloud', code: 'Vbz = Rp×Pz + Ra×Az', route: 'Economizer', color: CATEGORY.airflow, proOnly: true },
+  { key: 'duct-leakage', title: 'Airflow Difference', subtitle: 'Fan vs delivered CFM', icon: 'air', code: 'Loss % = ΔCFM ÷ fan CFM', route: 'DuctLeakage', color: CATEGORY.duct, proOnly: true },
+  { key: 'heat-recovery', title: 'Heat Recovery', subtitle: 'Sensible effectiveness', icon: 'device-thermostat', code: 'ε = ΔT supply ÷ ΔT available', route: 'HeatRecovery', color: CATEGORY.efficiency, proOnly: true },
 ];
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -936,6 +938,58 @@ export function EconomizerScreen() {
         <PrimaryButton label="Calculate" icon="cloud" onPress={calculate} style={{ marginTop: 4 }} />
       </Panel>
       <MetricReadout result={result} accent={CATEGORY.airflow} />
+    </CalculatorShell>
+  );
+}
+
+export function DuctLeakageScreen() {
+  const { addCalculation } = useAppStore();
+  const [fanCfm, setFanCfm] = useState('');
+  const [deliveredCfm, setDeliveredCfm] = useState('');
+  const [result, setResult] = useState<MetricResult | null>(null);
+  const calculate = () => {
+    const inputs = { fanCfm: requiredNumber(fanCfm), deliveredCfm: requiredNumber(deliveredCfm) };
+    const next = HAVACEngine.ductLeakage(inputs);
+    setResult(next);
+    if (next.ok) addCalculation({ type: 'ductLeakage', inputs, result: next });
+  };
+  return (
+    <CalculatorShell title="Airflow Difference" code="Measured supply airflow comparison">
+      <Panel>
+        <Field label="Fan airflow" suffix="CFM" value={fanCfm} onChangeText={setFanCfm} keyboardType="numeric" />
+        <Field label="Delivered airflow" suffix="CFM" value={deliveredCfm} onChangeText={setDeliveredCfm} keyboardType="numeric" />
+        <PrimaryButton label="Calculate" icon="air" onPress={calculate} />
+      </Panel>
+      <MetricReadout result={result} accent={CATEGORY.duct} />
+    </CalculatorShell>
+  );
+}
+
+export function HeatRecoveryScreen() {
+  const { addCalculation } = useAppStore();
+  const [outdoorTemp, setOutdoorTemp] = useState('');
+  const [returnTemp, setReturnTemp] = useState('');
+  const [supplyTemp, setSupplyTemp] = useState('');
+  const [result, setResult] = useState<MetricResult | null>(null);
+  const calculate = () => {
+    const inputs = {
+      outdoorTemp: requiredNumber(outdoorTemp),
+      returnTemp: requiredNumber(returnTemp),
+      supplyTemp: requiredNumber(supplyTemp),
+    };
+    const next = HAVACEngine.heatRecovery(inputs);
+    setResult(next);
+    if (next.ok) addCalculation({ type: 'heatRecovery', inputs, result: next });
+  };
+  return (
+    <CalculatorShell title="Heat Recovery" code="Sensible temperature effectiveness">
+      <Panel>
+        <Field label="Outdoor air" suffix="°F" value={outdoorTemp} onChangeText={setOutdoorTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} />
+        <Field label="Return air" suffix="°F" value={returnTemp} onChangeText={setReturnTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} />
+        <Field label="Supply after core" suffix="°F" value={supplyTemp} onChangeText={setSupplyTemp} keyboardType={SIGNED_DECIMAL_KEYBOARD} />
+        <PrimaryButton label="Calculate" icon="device-thermostat" onPress={calculate} />
+      </Panel>
+      <MetricReadout result={result} accent={CATEGORY.efficiency} />
     </CalculatorShell>
   );
 }

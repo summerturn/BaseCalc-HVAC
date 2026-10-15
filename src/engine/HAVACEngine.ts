@@ -97,6 +97,53 @@ function enthalpyBtuPerLb(dbF: number, wbF: number): number {
 // ─── Calculator Engine ───────────────────────────────────────────────
 
 export const HAVACEngine = {
+  ductLeakage(inputs: { fanCfm: number; deliveredCfm: number }): MetricResult {
+    const errors = [
+      validatePositive(inputs.fanCfm, 'Fan airflow'),
+      validateRange(inputs.deliveredCfm, 0, 1000000, 'Delivered airflow'),
+      inputs.deliveredCfm > inputs.fanCfm ? 'Delivered airflow cannot exceed fan airflow in this estimate' : null,
+    ].filter(Boolean);
+    if (errors.length) return { ok: false, message: errors.join('; '), fields: [], details: [] };
+    const lostCfm = inputs.fanCfm - inputs.deliveredCfm;
+    const lossPercent = lostCfm / inputs.fanCfm * 100;
+    return {
+      ok: true,
+      message: `Measured airflow difference: ${fmt(lossPercent, 1)}%`,
+      fields: [
+        { label: 'Airflow difference', value: fmt(lostCfm, 0), unit: 'CFM', emphasis: true },
+        { label: 'Difference', value: fmt(lossPercent, 1), unit: '%', emphasis: true },
+      ],
+      details: [
+        `Difference = ${fmt(inputs.fanCfm, 0)} − ${fmt(inputs.deliveredCfm, 0)} = ${fmt(lostCfm, 0)} CFM`,
+        `Difference % = ${fmt(lostCfm, 0)} ÷ ${fmt(inputs.fanCfm, 0)} × 100 = ${fmt(lossPercent, 1)}%`,
+        'This comparison includes measurement uncertainty and any unmeasured branches. It is not a duct leakage certification test.',
+      ],
+    };
+  },
+
+  heatRecovery(inputs: { outdoorTemp: number; returnTemp: number; supplyTemp: number }): MetricResult {
+    const errors = [
+      validateRange(inputs.outdoorTemp, -80, 160, 'Outdoor temperature'),
+      validateRange(inputs.returnTemp, -80, 160, 'Return temperature'),
+      validateRange(inputs.supplyTemp, -80, 160, 'Supply temperature'),
+      Math.abs(inputs.returnTemp - inputs.outdoorTemp) < 5 ? 'Outdoor and return temperatures must differ by at least 5°F' : null,
+    ].filter(Boolean);
+    if (errors.length) return { ok: false, message: errors.join('; '), fields: [], details: [] };
+    const effectiveness = (inputs.supplyTemp - inputs.outdoorTemp)
+      / (inputs.returnTemp - inputs.outdoorTemp) * 100;
+    if (effectiveness < 0 || effectiveness > 100) {
+      return { ok: false, message: 'Supply temperature must lie between outdoor and return temperatures for this sensible-only estimate.', fields: [], details: [] };
+    }
+    return {
+      ok: true,
+      message: `Sensible temperature effectiveness: ${fmt(effectiveness, 1)}%`,
+      fields: [{ label: 'Sensible effectiveness', value: fmt(effectiveness, 1), unit: '%', emphasis: true }],
+      details: [
+        `Effectiveness = (supply − outdoor) ÷ (return − outdoor) × 100 = ${fmt(effectiveness, 1)}%`,
+        'Use steady-state temperatures at the heat-recovery device. This estimate excludes latent recovery, flow imbalance, defrost, and fan heat.',
+      ],
+    };
+  },
   btuTons(inputs: { btu?: number; tons?: number }): MetricResult {
     const hasBtu = typeof inputs.btu === 'number';
     const hasTons = typeof inputs.tons === 'number';

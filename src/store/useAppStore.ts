@@ -56,6 +56,14 @@ export interface Invoice {
   updatedAt: string;
   synced: boolean;
   pdfPath?: string;
+  calculationIds?: string[];
+}
+
+export interface JobTemplate {
+  id: string;
+  name: string;
+  lineItems: Pick<InvoiceLineItem, 'description' | 'quantity'>[];
+  notes: string;
 }
 
 export interface CalculationRecord {
@@ -79,7 +87,9 @@ export interface CalculationRecord {
     | 'filterVelocity'
     | 'combustionAnalysis'
     | 'refrigerantWeight'
-    | 'economizer';
+    | 'economizer'
+    | 'ductLeakage'
+    | 'heatRecovery';
   inputs: Record<string, any>;
   result: Record<string, any>;
   createdAt: string;
@@ -119,6 +129,10 @@ export interface AppState {
 
   // Invoices
   invoices: Invoice[];
+  templates: JobTemplate[];
+  addTemplate: (name: string, invoice: Invoice) => void;
+  deleteTemplate: (id: string) => void;
+  restoreLocalData: (data: { clients: Client[]; invoices: Invoice[]; calculations: CalculationRecord[]; templates: JobTemplate[]; company: CompanySettings }) => Promise<void>;
   addInvoice: (invoice: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'synced'>) => CreationResult;
   updateInvoice: (id: string, updates: Partial<Invoice>) => void;
   deleteInvoice: (id: string) => void;
@@ -171,6 +185,7 @@ function migratePersistedState(persistedState: unknown): unknown {
     invoices: Array.isArray(state.invoices)
       ? state.invoices.filter((invoice) => isRecord(invoice) && Array.isArray(invoice.lineItems))
       : [],
+    templates: Array.isArray(state.templates) ? state.templates.filter(isRecord) : [],
     calculations: Array.isArray(state.calculations) ? state.calculations.filter(isRecord) : [],
     themeMode: state.themeMode === 'light' || state.themeMode === 'dark' ? state.themeMode : DEFAULT_THEME_MODE,
     isPro: state.isPro === true && verificationAge >= 0 && verificationAge <= PRO_OFFLINE_GRACE_MS,
@@ -185,6 +200,29 @@ function migratePersistedState(persistedState: unknown): unknown {
 const APP_STORAGE_NAME = 'basecalc-hvac-storage';
 const LEGACY_STORAGE_NAMES = ['nexduit-storage', 'tradecalc-storage', 'watthawk-storage', 'sparkcalc-storage'] as const;
 const DATABASE_NAME = 'tradecalc.db';
+const STORAGE_VERSION = 3;
+
+let storageWriteTail: Promise<void> = Promise.resolve();
+let restoreInProgress = false;
+let suppressedWriteCount = 0;
+function writeStoredState(name: string, value: string): Promise<void> {
+  const write = storageWriteTail.then(() => AsyncStorage.setItem(name, value));
+  storageWriteTail = write.catch(() => {});
+  return write;
+}
+
+function persistedFields(state: AppState) {
+  return {
+    clients: state.clients,
+    invoices: state.invoices,
+    templates: state.templates,
+    calculations: state.calculations,
+    themeMode: state.themeMode,
+    company: state.company,
+    isPro: state.isPro,
+    proLastVerifiedAt: state.proLastVerifiedAt,
+  };
+}
 
 const appStorage = {
   getItem: async (name: string) => {
@@ -194,7 +232,7 @@ const appStorage = {
     for (const legacyStorageName of LEGACY_STORAGE_NAMES) {
       const legacyValue = await AsyncStorage.getItem(legacyStorageName);
       if (legacyValue === null) continue;
-      await AsyncStorage.setItem(APP_STORAGE_NAME, legacyValue);
+      await writeStoredState(APP_STORAGE_NAME, legacyValue);
       for (const staleStorageName of LEGACY_STORAGE_NAMES) {
         await AsyncStorage.removeItem(staleStorageName);
       }
@@ -202,7 +240,13 @@ const appStorage = {
     }
     return null;
   },
-  setItem: (name: string, value: string) => AsyncStorage.setItem(name, value),
+  setItem: (name: string, value: string) => {
+    if (restoreInProgress && name === APP_STORAGE_NAME) {
+      suppressedWriteCount += 1;
+      return Promise.resolve();
+    }
+    return writeStoredState(name, value);
+  },
   removeItem: async (name: string) => {
     await AsyncStorage.removeItem(name);
     if (name === APP_STORAGE_NAME) {
@@ -306,6 +350,7 @@ export const useAppStore = create<AppState>()(
       // ─── Initial State ───
       clients: [],
       invoices: [],
+      templates: [],
       calculations: [],
       company: {
         name: 'My HVAC Company',
@@ -325,6 +370,50 @@ export const useAppStore = create<AppState>()(
       proLastVerifiedAt: null,
 
       setThemeMode: (mode) => set({ themeMode: mode }),
+      addTemplate: (name, invoice) => {
+        if (!get().isPro || !name.trim()) return;
+        set((state) => ({
+          templates: [...state.templates, {
+            id: `template_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+            name: name.trim(),
+            lineItems: invoice.lineItems.map(({ description, quantity }) => ({ description, quantity })),
+            notes: invoice.notes,
+          }],
+        }));
+      },
+      deleteTemplate: (id) => set((state) => ({ templates: state.templates.filter((template) => template.id !== id) })),
+      restoreLocalData: async (data) => {
+        if (restoreInProgress) throw new Error('A backup restore is already in progress.');
+        const replacement = {
+          ...data,
+          invoices: data.invoices.map((invoice) => ({ ...invoice, pdfPath: undefined, synced: false })),
+          clients: data.clients.map((client) => ({ ...client, synced: false })),
+          calculations: data.calculations.map((calculation) => ({ ...calculation, synced: false })),
+        };
+        restoreInProgress = true;
+        try {
+          await storageWriteTail;
+          const observedWrites = suppressedWriteCount;
+          const snapshot = persistedFields({ ...get(), ...replacement });
+          const serialized = JSON.stringify({ state: snapshot, version: STORAGE_VERSION });
+          await writeStoredState(APP_STORAGE_NAME, serialized);
+          const changedDuringWrite = observedWrites !== suppressedWriteCount;
+          set(replacement);
+          restoreInProgress = false;
+          if (changedDuringWrite) {
+            try {
+              const latest = persistedFields(get());
+              await writeStoredState(APP_STORAGE_NAME, JSON.stringify({ state: latest, version: STORAGE_VERSION }));
+            } catch {
+              // The replacement itself was saved. A later normal state change can
+              // retry persistence of any settings updated during the restore.
+              console.warn('[Storage] Could not save a concurrent settings update after restore.');
+            }
+          }
+        } finally {
+          restoreInProgress = false;
+        }
+      },
 
       // ─── Client Actions ───
       addClient: (clientData) => {
@@ -370,7 +459,12 @@ export const useAppStore = create<AppState>()(
 
         set((state) => ({
           clients: state.clients.filter((c) => c.id !== id),
-          invoices: state.invoices.filter((i) => i.clientId !== id),
+          invoices: state.invoices
+            .filter((i) => i.clientId !== id)
+            .map((invoice) => ({
+              ...invoice,
+              calculationIds: invoice.calculationIds?.filter((calculationId) => !calculationIds.includes(calculationId)),
+            })),
           calculations: state.calculations.filter((c) => c.clientId !== id),
           pendingDeletes: mergePendingDeletes(state.pendingDeletes, {
             clients: [id],
@@ -483,6 +577,10 @@ export const useAppStore = create<AppState>()(
       deleteCalculation: (id) => {
         set((state) => ({
           calculations: state.calculations.filter((c) => c.id !== id),
+          invoices: state.invoices.map((invoice) => ({
+            ...invoice,
+            calculationIds: invoice.calculationIds?.filter((calculationId) => calculationId !== id),
+          })),
           pendingDeletes: mergePendingDeletes(state.pendingDeletes, { calculations: [id] }),
         }));
         get().sync();
@@ -543,18 +641,10 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: APP_STORAGE_NAME,
-      version: 3,
+      version: STORAGE_VERSION,
       storage: createJSONStorage(() => appStorage),
       migrate: migratePersistedState,
-      partialize: (state) => ({
-        clients: state.clients,
-        invoices: state.invoices,
-        calculations: state.calculations,
-        themeMode: state.themeMode,
-        company: state.company,
-        isPro: state.isPro,
-        proLastVerifiedAt: state.proLastVerifiedAt,
-      }),
+      partialize: persistedFields,
       onRehydrateStorage: () => (state) => {
         state?.refreshProStatus();
       },
