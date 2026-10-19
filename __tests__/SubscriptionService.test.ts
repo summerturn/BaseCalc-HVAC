@@ -45,9 +45,16 @@ import Purchases, {
   type PurchasesPackage,
   type PurchasesStoreProduct,
 } from 'react-native-purchases';
+import { isRevenueCatConfigured } from '../src/lib/config';
 import { SubscriptionService, type SubscriptionStorefront } from '../src/services/SubscriptionService';
 
 const purchasesMock = jest.mocked(Purchases);
+const revenueCatConfiguredMock = jest.mocked(isRevenueCatConfigured);
+
+function expectRestoreDoesNotPurchase(): void {
+  expect(purchasesMock.purchasePackage).not.toHaveBeenCalled();
+  expect(purchasesMock.purchaseStoreProduct).not.toHaveBeenCalled();
+}
 
 function product(identifier: string): PurchasesStoreProduct {
   return {
@@ -56,7 +63,7 @@ function product(identifier: string): PurchasesStoreProduct {
   } as PurchasesStoreProduct;
 }
 
-function customerInfo(activeEntitlements: Record<string, { isActive: boolean }>): CustomerInfo {
+function customerInfo(activeEntitlements: Record<string, { isActive: boolean; productIdentifier?: string; willRenew?: boolean }>): CustomerInfo {
   return {
     entitlements: {
       active: activeEntitlements,
@@ -79,6 +86,56 @@ function storefront(
 describe('subscription and paywall policy', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    revenueCatConfiguredMock.mockReturnValue(true);
+  });
+
+  test('fails closed on cold start without a platform store key and does not call RevenueCat', async () => {
+    revenueCatConfiguredMock.mockReturnValue(false);
+
+    await expect(SubscriptionService.restorePurchases())
+      .rejects.toThrow('Store checkout is not available in this build.');
+
+    expect(purchasesMock.configure).not.toHaveBeenCalled();
+    expect(purchasesMock.restorePurchases).not.toHaveBeenCalled();
+    expectRestoreDoesNotPurchase();
+  });
+
+  test('restores lifetime ownership when RevenueCat returns the active Pro entitlement', async () => {
+    purchasesMock.restorePurchases.mockResolvedValueOnce(
+      customerInfo({ pro: { isActive: true, productIdentifier: 'basecalc_hvac_pro_lifetime', willRenew: false } })
+    );
+
+    await expect(SubscriptionService.restorePurchases()).resolves.toBe(true);
+
+    expect(purchasesMock.restorePurchases).toHaveBeenCalledTimes(1);
+    expectRestoreDoesNotPurchase();
+  });
+
+  test('restores an active legacy subscription through the shared Pro entitlement', async () => {
+    purchasesMock.restorePurchases.mockResolvedValueOnce(
+      customerInfo({ pro: { isActive: true, productIdentifier: 'basecalc_hvac_pro_monthly', willRenew: true } })
+    );
+
+    await expect(SubscriptionService.restorePurchases()).resolves.toBe(true);
+    expectRestoreDoesNotPurchase();
+  });
+
+  test.each([
+    ['no active entitlements', customerInfo({})],
+    ['inactive Pro entitlement', customerInfo({ pro: { isActive: false } })],
+  ])('does not grant Pro for %s', async (_label, restoredInfo) => {
+    purchasesMock.restorePurchases.mockResolvedValueOnce(restoredInfo);
+
+    await expect(SubscriptionService.restorePurchases()).resolves.toBe(false);
+    expectRestoreDoesNotPurchase();
+  });
+
+  test('propagates a store SDK failure so the paywall can report restore failure', async () => {
+    const sdkError = new Error('Store service unavailable');
+    purchasesMock.restorePurchases.mockRejectedValueOnce(sdkError);
+
+    await expect(SubscriptionService.restorePurchases()).rejects.toBe(sdkError);
+    expectRestoreDoesNotPurchase();
   });
 
   test('one returned SKU is enough for a usable paywall', () => {
