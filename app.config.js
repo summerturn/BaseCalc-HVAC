@@ -2,13 +2,14 @@ const baseExpoConfig = {
   name: 'BaseCalc HVAC',
   slug: 'basecalc-hvac',
   newArchEnabled: true,
-  version: '1.0.0',
+  version: '1.0.2',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
+    buildNumber: '15',
     bundleIdentifier: 'com.basemapped.basecalchvac',
     config: {
       usesNonExemptEncryption: false,
@@ -47,6 +48,7 @@ const baseExpoConfig = {
     ],
     'expo-font',
     'expo-sharing',
+    ['expo-build-properties', { ios: { enableSceneSupport: true } }],
     './plugins/withAndroidLaunchMode',
   ],
   owner: 'basemapped-llc',
