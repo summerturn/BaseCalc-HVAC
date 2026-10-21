@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons } from '@expo/vector-icons';
-import { AppState as NativeAppState } from 'react-native';
+import { AppState as NativeAppState, Keyboard, Platform } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -40,6 +40,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { HistoryScreen } from './src/screens/HistoryScreen';
 import { PaywallScreen } from './src/screens/PaywallScreen';
 import { TAB_BAR_MIN_HEIGHT } from './src/components/ui';
+import { observeKeyboardVisibility } from './src/lib/keyboardVisibility';
 import { AppThemeProvider, useAppTheme } from './src/theme/useAppTheme';
 import { fontMap } from './src/theme/typography';
 import { useAppStore } from './src/store/useAppStore';
@@ -161,6 +162,14 @@ function JobStack() {
 function MainTabs() {
   const { colors } = useAppTheme();
   const { bottom } = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => observeKeyboardVisibility(
+    (name, listener) => Keyboard.addListener(name, listener),
+    Platform.OS === 'ios' ? 'ios' : 'android',
+    setKeyboardVisible,
+  ), []);
+
   return (
     <Tab.Navigator
       key={`tabs-${colors.mode}`}
@@ -169,8 +178,8 @@ function MainTabs() {
         tabBarIcon: ({ color, size }) => <MaterialIcons name={TAB_ICONS[route.name]} size={size} color={color} />,
         tabBarActiveTintColor: colors.amberBright,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarHideOnKeyboard: true,
         tabBarStyle: {
+          display: keyboardVisible ? 'none' : 'flex',
           height: TAB_BAR_MIN_HEIGHT + bottom,
           paddingTop: 8,
           paddingBottom: bottom > 0 ? bottom : 10,
