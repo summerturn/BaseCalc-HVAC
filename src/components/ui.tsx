@@ -72,7 +72,7 @@ export function withAlpha(hex: string, a: number): string {
 
 export function Screen({
   children,
-  edges = ['top'],
+  edges = ['top', 'left', 'right'],
   glow = true,
 }: {
   children: ReactNode;
