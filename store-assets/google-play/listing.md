@@ -48,8 +48,8 @@ DEVICE-LOCAL FOR THE FIELD
 - Works offline by default.
 - No BaseCalc account or cloud sync.
 - Job contacts, worksheets, settings, and calculation history use the app's local storage.
-- Subscription status is checked through RevenueCat; exports leave the app only when you choose to share them.
-- No third-party advertising SDK or third-party ads in this release.
+- Purchase status is checked through RevenueCat; exports leave the app only when you choose to share them.
+- Free includes clearly labeled, non-personalized ads and optional rewarded videos; Lifetime Pro (one-time purchase) removes all banner and rewarded ads for good.
 - Dark and light themes with a high-contrast job-site interface.
 
 BaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.

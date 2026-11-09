@@ -18,7 +18,7 @@ Source of truth for App Store Connect and Google Play listing text. Values mirro
 | **Title** | `BaseCalc HVAC Calculator` | 24 / 30 |
 | **Subtitle** | `BTU CFM Duct Calculator` | 23 / 30 |
 | **Keywords** | `hvac,calculator,BTU,CFM,duct,sizing,airflow,refrigerant,superheat,subcooling,load,psychrometric` | 95 / 100 |
-| **Promotional Text** | `HVAC field math for BTU, CFM, duct sizing, psychrometrics, manufacturer-data checks, saved history, worksheets, and materials.` | 130 / 170 |
+| **Promotional Text** | `HVAC field math for BTU, CFM, duct sizing, psychrometrics, manufacturer-data checks, saved history, worksheets, and materials. Pay once for Lifetime Pro — no ads.` | 162 / 170 |
 
 **Description**
 
@@ -61,8 +61,8 @@ DEVICE-LOCAL FOR THE FIELD
 • Works offline by default.
 • No BaseCalc account or cloud sync.
 • Job contacts, worksheets, settings, and calculation history use the app's local storage.
-• Subscription status is checked through RevenueCat; exports leave the app only when you choose to share them.
-• No third-party advertising SDK or third-party ads in this release.
+• Purchase status is checked through RevenueCat; exports leave the app only when you choose to share them.
+• Free includes clearly labeled, non-personalized ads and optional rewarded videos; Lifetime Pro (one-time purchase) removes all banner and rewarded ads for good.
 • Dark and light themes with a high-contrast job-site interface.
 
 BaseCalc HVAC is a professional reference tool. Always verify against current industry standards, manufacturer data, and local codes. The authority having jurisdiction has the final say.
@@ -92,7 +92,7 @@ Initial release of BaseCalc HVAC Calculator with 18 HVAC field calculators, save
 - Age rating: 4+.
 - BaseCalc HVAC stores user-entered job data in app-local storage and does not provide a BaseCalc account or BaseCalc cloud sync.
 - Disclose app-store purchase and entitlement processing through RevenueCat.
-- This source does not include an advertising SDK or display third-party ads.
+- AdMob is included for Free-plan banner and rewarded ads; complete the advertising, identifier, diagnostics, interaction, and approximate-location disclosures before release.
 
 ## Screenshots
 

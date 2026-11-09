@@ -8,5 +8,8 @@
     "**/*.ts",
     "**/*.tsx",
     "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "**/* 2.ts"
   ]
 }

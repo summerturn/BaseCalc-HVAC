@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { CATEGORY } from '../theme/appTheme';
 import { useColors } from '../theme/useAppTheme';
 import { Body, H2, Label, Mono } from '../components/Type';
+import { AdBanner } from '../components/AdBanner';
 import {
   ACTION_RAIL_WIDTH,
   EmptyState,
@@ -71,7 +72,6 @@ export function HistoryScreen() {
     <Screen>
       <ListScreenScrollView bottomPadding={bottomClearance}>
         <ListScreenHeader title="History" subtitle="Saved calculations on this device." />
-
         {items.length === 0 ? (
           <EmptyState icon="history" title="No history yet" subtitle="Run a calculation to keep a job-site record here." />
         ) : (
@@ -113,6 +113,7 @@ export function HistoryScreen() {
             );
           })
         )}
+        <AdBanner />
         <FooterContentSpacer />
       </ListScreenScrollView>
     </Screen>

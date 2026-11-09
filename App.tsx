@@ -43,6 +43,7 @@ import { fontMap } from './src/theme/typography';
 import { useAppStore } from './src/store/useAppStore';
 import { SubscriptionService } from './src/services/SubscriptionService';
 import { isRevenueCatConfigured } from './src/lib/config';
+import { AdsProvider } from './src/ads/AdsProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -59,7 +60,6 @@ const TAB_ICONS: Record<string, keyof typeof MaterialIcons.glyphMap> = {
 
 function CalculatorStack() {
   const { colors } = useAppTheme();
-  const { isPro } = useAppStore();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="CalculatorDashboard" component={CalculatorDashboardScreen} />
@@ -67,24 +67,20 @@ function CalculatorStack() {
       <Stack.Screen name="CfmFromBtu" component={CfmFromBtuScreen} />
       <Stack.Screen name="BtuFromCfm" component={BtuFromCfmScreen} />
       <Stack.Screen name="AirVelocity" component={AirVelocityScreen} />
-      {isPro ? (
-        <>
-          <Stack.Screen name="DuctSizing" component={DuctSizingScreen} />
-          <Stack.Screen name="Psychrometrics" component={PsychrometricsScreen} />
-          <Stack.Screen name="RefrigerantLines" component={RefrigerantLinesScreen} />
-          <Stack.Screen name="SuperheatSubcool" component={SuperheatSubcoolScreen} />
-          <Stack.Screen name="RoomLoad" component={RoomLoadScreen} />
-          <Stack.Screen name="HeatPumpBalance" component={HeatPumpBalanceScreen} />
-          <Stack.Screen name="Hydronics" component={HydronicsScreen} />
-          <Stack.Screen name="MixedAir" component={MixedAirScreen} />
-          <Stack.Screen name="AirChanges" component={AirChangesScreen} />
-          <Stack.Screen name="EvaporativeCooling" component={EvaporativeCoolingScreen} />
-          <Stack.Screen name="FilterVelocity" component={FilterVelocityScreen} />
-          <Stack.Screen name="CombustionAnalysis" component={CombustionAnalysisScreen} />
-          <Stack.Screen name="RefrigerantWeight" component={RefrigerantWeightScreen} />
-          <Stack.Screen name="Economizer" component={EconomizerScreen} />
-        </>
-      ) : null}
+      <Stack.Screen name="DuctSizing" component={DuctSizingScreen} />
+      <Stack.Screen name="Psychrometrics" component={PsychrometricsScreen} />
+      <Stack.Screen name="RefrigerantLines" component={RefrigerantLinesScreen} />
+      <Stack.Screen name="SuperheatSubcool" component={SuperheatSubcoolScreen} />
+      <Stack.Screen name="RoomLoad" component={RoomLoadScreen} />
+      <Stack.Screen name="HeatPumpBalance" component={HeatPumpBalanceScreen} />
+      <Stack.Screen name="Hydronics" component={HydronicsScreen} />
+      <Stack.Screen name="MixedAir" component={MixedAirScreen} />
+      <Stack.Screen name="AirChanges" component={AirChangesScreen} />
+      <Stack.Screen name="EvaporativeCooling" component={EvaporativeCoolingScreen} />
+      <Stack.Screen name="FilterVelocity" component={FilterVelocityScreen} />
+      <Stack.Screen name="CombustionAnalysis" component={CombustionAnalysisScreen} />
+      <Stack.Screen name="RefrigerantWeight" component={RefrigerantWeightScreen} />
+      <Stack.Screen name="Economizer" component={EconomizerScreen} />
     </Stack.Navigator>
   );
 }
@@ -95,8 +91,6 @@ function SubscriptionLifecycle() {
   useEffect(() => {
     let mounted = true;
     let removeRevenueCatListener: (() => void) | undefined;
-
-    void refreshProStatus();
 
     if (isRevenueCatConfigured()) {
       void SubscriptionService.subscribeToStatus((isPro) => {
@@ -238,7 +232,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AppThemeProvider>
-        <Root />
+        <AdsProvider>
+          <Root />
+        </AdsProvider>
       </AppThemeProvider>
     </SafeAreaProvider>
   );

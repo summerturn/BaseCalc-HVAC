@@ -6,6 +6,7 @@ import { useAppStore, type Invoice } from '../store/useAppStore';
 import { InvoiceService } from '../services/InvoiceService';
 import { useColors } from '../theme/useAppTheme';
 import { Body, H2, Label, Small } from '../components/Type';
+import { AdBanner } from '../components/AdBanner';
 import {
   Divider,
   EmptyState,
@@ -226,6 +227,7 @@ export function MaterialsScreen() {
             />
           ))
         )}
+        <AdBanner />
         <FooterContentSpacer />
       </ListScreenScrollView>
 

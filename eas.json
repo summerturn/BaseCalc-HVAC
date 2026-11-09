@@ -7,20 +7,36 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "BASECALC_ADS_TEST_MODE": "true",
+        "ADMOB_ANDROID_APP_ID": "ca-app-pub-3940256099942544~3347511713",
+        "ADMOB_IOS_APP_ID": "ca-app-pub-3940256099942544~1458002511"
+      },
       "ios": { "simulator": false },
       "android": { "buildType": "apk" }
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "BASECALC_ADS_TEST_MODE": "true",
+        "ADMOB_ANDROID_APP_ID": "ca-app-pub-3940256099942544~3347511713",
+        "ADMOB_IOS_APP_ID": "ca-app-pub-3940256099942544~1458002511"
+      },
       "ios": { "buildConfiguration": "Release", "credentialsSource": "remote" },
       "android": { "buildType": "apk" }
     },
     "simulator": {
       "distribution": "internal",
+      "env": {
+        "BASECALC_ADS_TEST_MODE": "true",
+        "ADMOB_ANDROID_APP_ID": "ca-app-pub-3940256099942544~3347511713",
+        "ADMOB_IOS_APP_ID": "ca-app-pub-3940256099942544~1458002511"
+      },
       "ios": { "simulator": true, "buildConfiguration": "Release" }
     },
     "production": {
       "environment": "production",
+      "env": { "BASECALC_ADS_PRODUCTION": "true" },
       "autoIncrement": true,
       "ios": {
         "buildConfiguration": "Release",

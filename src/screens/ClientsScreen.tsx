@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppStore, Client, CalculationRecord, Invoice } from '../store/useAppStore';
 import { useColors } from '../theme/useAppTheme';
 import { Body, Display, H1, H2, Label, Mono, Small } from '../components/Type';
+import { AdBanner } from '../components/AdBanner';
 import {
   ACTION_RAIL_WIDTH,
   BackBar,
@@ -83,7 +84,6 @@ export function ClientsScreen({ navigation }: { navigation: any }) {
           title="Job Contacts"
           subtitle={`${clients.length} ${clients.length === 1 ? 'contact' : 'contacts'} saved for job worksheets.`}
         />
-
         <View style={{ marginBottom: 16 }}>
           <SearchBar value={q} onChangeText={setQ} placeholder="Search name, company, email..." />
         </View>
@@ -125,6 +125,7 @@ export function ClientsScreen({ navigation }: { navigation: any }) {
             </Pressable>
           ))
         )}
+        <AdBanner />
         <FooterContentSpacer />
       </ListScreenScrollView>
       <FAB onPress={() => { if (canAddClient()) navigation.navigate('AddClient'); }} />
@@ -173,6 +174,7 @@ function ClientForm({
           <Field label="Notes" value={form.notes} onChangeText={(t) => setForm({ ...form, notes: t })} placeholder="Site notes, gate codes…" multiline />
         </Panel>
         <PrimaryButton label={submitLabel} icon="check" onPress={submit} style={{ marginTop: 16 }} />
+        <AdBanner />
       </FormScrollView>
     </Screen>
   );
@@ -317,6 +319,7 @@ export function ClientDetailScreen({ route, navigation }: { route: any; navigati
             );
           })
         )}
+        <AdBanner />
       </ScrollView>
     </Screen>
   );

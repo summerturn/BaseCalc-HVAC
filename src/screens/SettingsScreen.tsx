@@ -1,5 +1,5 @@
 import { type ComponentProps, useState } from 'react';
-import { Pressable, View, useWindowDimensions } from 'react-native';
+import { Alert, Pressable, View, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, type NavigationProp, type ParamListBase } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
@@ -9,16 +9,18 @@ import { Body, Label, Mono, Small } from '../components/Type';
 import {
   CONTROL_GAP,
   Field,
-  FooterContentSpacer,
   ListScreenHeader,
   ListScreenScrollView,
   Panel,
   PrimaryButton,
   Screen,
+  SecondaryButton,
   SECTION_GAP,
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
+import { AdBanner } from '../components/AdBanner';
+import { useAds } from '../ads/AdsProvider';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
@@ -46,6 +48,7 @@ export function SettingsScreen() {
   const bottomClearance = useBottomClearance();
   const [form, setForm] = useState({ ...company });
   const [saved, setSaved] = useState(false);
+  const { privacyOptionsRequired, showPrivacyOptions } = useAds();
   const stackLocationFields = width < 360;
 
   const handleSave = () => {
@@ -58,14 +61,13 @@ export function SettingsScreen() {
     <Screen>
       <ListScreenScrollView bottomPadding={bottomClearance}>
         <ListScreenHeader title="Settings" />
-
         <Section title="Plan">
           <Panel>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1, paddingRight: 14 }}>
                 <Body tone="primary">{isPro ? 'Pro plan' : 'Free plan'}</Body>
                 <Small tone="muted" style={{ marginTop: 4 }}>
-                  {isPro ? 'All calculators and expanded local record limits are unlocked.' : 'Upgrade to unlock all calculators and expanded local record limits.'}
+                  {isPro ? 'All calculators and expanded local record limits are unlocked, and all ads are removed.' : 'Pay once to unlock all calculators, remove all ads, and expand local record limits.'}
                 </Small>
               </View>
               <MaterialIcons name={isPro ? 'workspace-premium' : 'person-outline'} size={24} color={isPro ? c.amber : c.textMuted} />
@@ -75,6 +77,29 @@ export function SettingsScreen() {
             ) : null}
           </Panel>
         </Section>
+
+        {!isPro ? (
+          <Section title="Advertising">
+            <Panel>
+              <Body tone="primary">Free plan ads</Body>
+              <Small tone="muted" style={{ marginTop: 5 }}>
+                Free users may see clearly labeled, non-personalized ads. Reward videos are optional and only open after you choose one to unlock a calculator. Lifetime Pro removes all banner and rewarded ads for good.
+              </Small>
+              {privacyOptionsRequired ? (
+                <SecondaryButton
+                  label="Privacy choices"
+                  icon="privacy-tip"
+                  onPress={() => {
+                    void showPrivacyOptions().then((shown) => {
+                      if (!shown) Alert.alert('Privacy choices unavailable', 'Please check your connection and try again.');
+                    });
+                  }}
+                  style={{ marginTop: 14 }}
+                />
+              ) : null}
+            </Panel>
+          </Section>
+        ) : null}
 
         <Section title="Appearance">
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -120,9 +145,9 @@ export function SettingsScreen() {
         <PrimaryButton label={saved ? 'Saved ✓' : 'Save settings'} icon={saved ? undefined : 'save'} onPress={handleSave} />
         <Small style={{ textAlign: 'center', marginTop: 18 }}>BaseCalc HVAC v1.0 · HVAC field reference</Small>
         <Small tone="muted" style={{ textAlign: 'center', marginTop: 10 }}>
-          Job contacts, worksheets, calculations, and company settings use this app's local storage. Subscription status is checked with RevenueCat; exports leave the app only when you choose to share them.
+          Job contacts, worksheets, calculations, and company settings use this app's local storage. Purchase status is checked with RevenueCat; exports leave the app only when you choose to share them.
         </Small>
-        <FooterContentSpacer />
+        <AdBanner />
       </ListScreenScrollView>
     </Screen>
   );

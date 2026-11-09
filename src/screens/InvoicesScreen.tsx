@@ -5,6 +5,7 @@ import { Invoice, useAppStore } from '../store/useAppStore';
 import { InvoiceService } from '../services/InvoiceService';
 import { useColors } from '../theme/useAppTheme';
 import { Body, Display, H1, H2, Label, Mono, Small } from '../components/Type';
+import { AdBanner } from '../components/AdBanner';
 import {
   BackBar,
   Divider,
@@ -88,7 +89,6 @@ export function JobTicketsScreen({ navigation }: { navigation: any }) {
           title="Jobs"
           subtitle={openTickets > 0 ? `${openTickets} open job ${openTickets === 1 ? 'worksheet' : 'worksheets'}` : 'Calculation handoffs and job records.'}
         />
-
         <View style={{ marginBottom: 12 }}>
           <SecondaryButton label="Job contacts" icon="person-outline" onPress={() => navigation.navigate('JobContacts')} />
         </View>
@@ -126,6 +126,7 @@ export function JobTicketsScreen({ navigation }: { navigation: any }) {
             </Pressable>
           ))
         )}
+        <AdBanner />
         <FooterContentSpacer />
       </ListScreenScrollView>
       <FAB onPress={() => { if (canAddInvoice()) navigation.navigate('CreateJobTicket'); }} />
@@ -193,7 +194,6 @@ export function CreateJobTicketScreen({ route, navigation }: { route: any; navig
       <FormScrollView bottomPadding={bottomClearance + 24}>
         <BackBar onBack={() => navigation.goBack()} />
         <View style={{ marginBottom: 18 }}><Display>New Job Worksheet</Display></View>
-
         <Label style={{ marginBottom: 8, }}>Job contact</Label>
         <Panel style={{ marginBottom: 16 }}>
           <Pressable onPress={() => setPickerOpen((o) => !o)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -272,6 +272,7 @@ export function CreateJobTicketScreen({ route, navigation }: { route: any; navig
         </Panel>
 
         <PrimaryButton label="Save worksheet" icon="check" onPress={handleCreate} />
+        <AdBanner />
       </FormScrollView>
     </Screen>
   );
@@ -419,6 +420,7 @@ export function JobTicketDetailScreen({ route, navigation }: { route: any; navig
         <View style={{ marginTop: 12 }}>
           <SecondaryButton label="Delete worksheet" icon="delete-outline" tint={c.fail} onPress={confirmDelete} disabled={generating} />
         </View>
+        <AdBanner />
       </ScrollView>
     </Screen>
   );

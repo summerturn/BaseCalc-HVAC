@@ -61,7 +61,7 @@ npx eas-cli metadata:push --profile production
 
 1. **Screenshots** → upload the 10 PNGs from `screenshots/` (iPhone 6.9") and the 10 from
    `screenshots-ipad/` (iPad 13"), in order. *(EAS metadata can't push screenshots.)*
-2. **Pricing** → Free download with BaseCalc Pro subscriptions at $7/month and $50/year.
+2. **Pricing** → Free download with ad-free BaseCalc Pro subscriptions at $7/month and $50/year.
 3. **App Privacy** → user-entered job contacts, job worksheets, settings, and calculations stay on device with no BaseCalc cloud sync option. Disclose purchase entitlement processing through RevenueCat.
 4. **Build** → attach the newest iOS build after final EAS submission, then submit for review when ready.
 

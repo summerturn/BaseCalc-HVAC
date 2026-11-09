@@ -1,6 +1,6 @@
-import { type ComponentProps, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 import { Alert, Image, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type NavigationProp, type ParamListBase, type RouteProp } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   HAVACEngine,
@@ -15,13 +15,13 @@ import { Body, Display, H1, H2, Label, Mono, Small } from '../components/Type';
 import {
   BackBar,
   Field,
-  FooterContentSpacer,
   FormScrollView,
   IconTile,
   MetricReadout,
   Panel,
   Pill,
   PrimaryButton,
+  SecondaryButton,
   SCREEN_H_PAD,
   SCREEN_TOP_PAD,
   Screen,
@@ -30,8 +30,17 @@ import {
   useBottomClearance,
   withAlpha,
 } from '../components/ui';
+import { AdBanner } from '../components/AdBanner';
+import { useAds, type RewardedAdOutcome, type RewardedAdStatus } from '../ads/AdsProvider';
+import { grantRewardedCalculatorAccess, hasRewardedCalculatorAccess, REWARDED_ACCESS_DURATION_MINUTES } from '../ads/rewardedAccess';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
+function rewardedActionLabel(status: RewardedAdStatus): string {
+  if (status === 'ready') return 'Watch video to unlock';
+  if (status === 'showing') return 'Opening video…';
+  if (status === 'error') return 'Retry reward video';
+  return 'Check reward video';
+}
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const optionalNumber = (value: string): number | undefined =>
   value.trim() === '' ? undefined : Number(value);
@@ -262,6 +271,8 @@ function BrandLockup({ compact }: { compact: boolean }) {
 export function CalculatorDashboardScreen({ navigation }: { navigation: { navigate: (s: string) => void } }) {
   const c = useColors();
   const { isPro } = useAppStore();
+  const { rewardedReady, rewardedStatus, retryRewardedAd, showRewardedAd } = useAds();
+  const [unlockingRoute, setUnlockingRoute] = useState<string | null>(null);
   const { width } = useWindowDimensions();
   const bottomClearance = useBottomClearance();
   const isTablet = width >= TABLET_BREAKPOINT;
@@ -276,14 +287,60 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
   const rawCardHeight = Math.round(cardWidth * (isTablet ? 1.03 : compact ? 1.18 : 1.12));
   const cardHeight = Math.max(compact ? 168 : 176, Math.min(isTablet ? 230 : 214, rawCardHeight));
   const rows = chunk(CALCS, columns);
-  const openCalculator = (calc: CalcDef) => {
+  const showRewardResult = (outcome: RewardedAdOutcome) => {
+    if (outcome === 'closed') Alert.alert('No unlock earned', 'Finish the rewarded video to unlock the calculator.');
+    if (outcome === 'unavailable') {
+      retryRewardedAd();
+      Alert.alert('Video still loading', 'Another rewarded video request has started. Try again in a moment.');
+    }
+    if (outcome === 'error') Alert.alert('Video unavailable', 'The rewarded video could not be shown. Check your connection and try again.');
+  };
+
+  const unlockWithRewardedAd = async (calc: CalcDef) => {
+    if (unlockingRoute) return;
+    setUnlockingRoute(calc.route);
+    try {
+      const outcome = await showRewardedAd();
+      if (outcome !== 'earned') {
+        showRewardResult(outcome);
+        return;
+      }
+      await grantRewardedCalculatorAccess(calc.route);
+      navigation.navigate(calc.route);
+    } catch (error) {
+      console.warn('[Ads] Rewarded calculator unlock could not be saved:', error);
+      Alert.alert('Unlock unavailable', 'The video finished, but the calculator unlock could not be saved. Please try again.');
+    } finally {
+      setUnlockingRoute(null);
+    }
+  };
+
+  const openCalculator = async (calc: CalcDef) => {
+    let hasRewardedAccess = false;
     if (calc.proOnly && !isPro) {
+      try {
+        hasRewardedAccess = await hasRewardedCalculatorAccess(calc.route);
+      } catch (error) {
+        console.warn('[Ads] Rewarded calculator access could not be read:', error);
+      }
+    }
+    if (calc.proOnly && !isPro && !hasRewardedAccess) {
+      const rewardAvailable = rewardedStatus !== 'disabled';
+      const rewardMessage = rewardedReady
+        ? `Watch one optional video to unlock ${calc.title} for ${REWARDED_ACCESS_DURATION_MINUTES} minutes, or choose Pro for every calculator with no ads.`
+        : rewardAvailable
+          ? 'A reward video is still loading. You can retry it now, or choose Pro for every calculator with no ads.'
+          : 'Reward videos are unavailable on this build. Choose Pro for every calculator with no ads.';
       Alert.alert(
-        'Pro calculator',
-        `${calc.title} is part of BaseCalc HVAC Pro. Upgrade to unlock every HVAC calculator.`,
-        [
+        'Choose access',
+        rewardMessage,
+        rewardAvailable ? [
           { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade', onPress: () => navigation.navigate('Paywall') },
+          { text: 'See Pro', onPress: () => navigation.navigate('Paywall') },
+          { text: rewardedReady ? 'Watch video' : 'Retry video', onPress: () => void unlockWithRewardedAd(calc) },
+        ] : [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'See Pro', onPress: () => navigation.navigate('Paywall') },
         ]
       );
       return;
@@ -349,7 +406,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
                       cardWidth={cardWidth}
                       cardHeight={cardHeight}
                       locked={Boolean(calc.proOnly && !isPro)}
-                      onPress={() => openCalculator(calc)}
+                      onPress={() => void openCalculator(calc)}
                     />
                   </View>
                 ))}
@@ -357,8 +414,7 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
             ))}
           </View>
         </View>
-
-        <FooterContentSpacer />
+        <AdBanner />
       </ScrollView>
     </Screen>
   );
@@ -367,8 +423,81 @@ export function CalculatorDashboardScreen({ navigation }: { navigation: { naviga
 // ─── Shared calculator shell ─────────────────────────────────────────
 
 function CalculatorShell({ title, code, children }: { title: string; code?: string; children: React.ReactNode }) {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route = useRoute<RouteProp<ParamListBase>>();
+  const isPro = useAppStore((state) => state.isPro);
+  const { rewardedStatus, retryRewardedAd, showRewardedAd } = useAds();
+  const premiumRoute = CALCS.some((calc) => calc.proOnly && calc.route === route.name);
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'blocked'>(premiumRoute && !isPro ? 'checking' : 'allowed');
+  const [unlocking, setUnlocking] = useState(false);
   const bottomClearance = useBottomClearance();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!premiumRoute || isPro) {
+      setAccess('allowed');
+      return () => { cancelled = true; };
+    }
+    setAccess('checking');
+    void hasRewardedCalculatorAccess(route.name)
+      .then((allowed) => {
+        if (!cancelled) setAccess(allowed ? 'allowed' : 'blocked');
+      })
+      .catch((error: unknown) => {
+        console.warn('[Ads] Rewarded calculator access could not be read:', error);
+        if (!cancelled) setAccess('blocked');
+      });
+    return () => { cancelled = true; };
+  }, [isPro, premiumRoute, route.name]);
+
+  const unlockCurrentCalculator = async () => {
+    if (unlocking) return;
+    setUnlocking(true);
+    try {
+      const outcome = await showRewardedAd();
+      if (outcome === 'earned') {
+        await grantRewardedCalculatorAccess(route.name);
+        setAccess('allowed');
+        return;
+      }
+      if (outcome === 'closed') Alert.alert('No unlock earned', 'Finish the rewarded video to unlock the calculator.');
+      if (outcome === 'unavailable') {
+        retryRewardedAd();
+        Alert.alert('Video still loading', 'Another rewarded video request has started. Try again in a moment.');
+      }
+      if (outcome === 'error') Alert.alert('Video unavailable', 'The rewarded video could not be shown. Check your connection and try again.');
+    } catch (error) {
+      console.warn('[Ads] Rewarded calculator unlock could not be saved:', error);
+      Alert.alert('Unlock unavailable', 'The video finished, but the calculator unlock could not be saved. Please try again.');
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  if (access !== 'allowed') {
+    return (
+      <Screen>
+        <FormScrollView bottomPadding={bottomClearance + 28}>
+          <BackBar onBack={() => navigation.goBack()} />
+          <Panel>
+            <H2>{access === 'checking' ? 'Checking access…' : 'Pro calculator'}</H2>
+            {access === 'blocked' ? (
+              <>
+                <Body tone="muted" style={{ marginTop: 8, marginBottom: 16 }}>
+                  Watch one optional video for {REWARDED_ACCESS_DURATION_MINUTES} minutes of access to this calculator, or choose Pro for every calculator with no ads.
+                </Body>
+                {rewardedStatus !== 'disabled' ? (
+                  <PrimaryButton label={rewardedActionLabel(rewardedStatus)} icon="play-circle-outline" onPress={() => void unlockCurrentCalculator()} disabled={unlocking || rewardedStatus === 'showing'} />
+                ) : null}
+                <SecondaryButton label="View Pro options" icon="workspace-premium" onPress={() => navigation.navigate('Paywall')} style={{ marginTop: 10 }} />
+              </>
+            ) : null}
+          </Panel>
+        </FormScrollView>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <FormScrollView bottomPadding={bottomClearance + 28}>
@@ -378,6 +507,7 @@ function CalculatorShell({ title, code, children }: { title: string; code?: stri
           <Display>{title}</Display>
         </View>
         {children}
+        <AdBanner />
       </FormScrollView>
     </Screen>
   );
